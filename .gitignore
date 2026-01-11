@@ -31,6 +31,10 @@ service-account-key.json
 !package-lock.json
 !tsconfig.json
 !tsconfig.*.json
+!app.json
+!eas.json
+!google-services.json
+!android/app/google-services.json
 
 # App Bundles (Play Store)
 play-store/app-bundles/*.aab

@@ -34,6 +34,7 @@ export default function AdViewScreen() {
   const [showBlurOverlay, setShowBlurOverlay] = useState(false);
   const secondsRemainingRef = useRef(5);
   const executeCloseRef = useRef<(() => Promise<void>) | null>(null);
+  const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
   
   // Animation values - must be declared before any early returns
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -149,21 +150,25 @@ export default function AdViewScreen() {
             }).start();
           }
           
-          // Only trigger close when we reach 0 AND (closing was requested OR naturally finished)
-          if (newValue === 0) {
-            // Wait a bit then trigger close
-            setTimeout(() => {
-              if (executeCloseRef.current) {
-                executeCloseRef.current();
-              }
-            }, 200);
+          // Stop timer at 0 but don't auto-close - user must click X to close
+          // No automatic closing - user must manually click the X button
+          if (newValue === 0 && timerIntervalRef.current) {
+            clearInterval(timerIntervalRef.current);
+            timerIntervalRef.current = null;
           }
           
           return newValue;
         });
       }, 1000);
+      
+      timerIntervalRef.current = timer;
 
-      return () => clearInterval(timer);
+      return () => {
+        if (timerIntervalRef.current) {
+          clearInterval(timerIntervalRef.current);
+          timerIntervalRef.current = null;
+        }
+      };
     }
   }, [isWatching, secondsRemaining, progressAnim, timerScaleAnim, closeButtonAnim, isClosing, executeCloseRef]);
 
@@ -364,19 +369,10 @@ export default function AdViewScreen() {
   const handleClose = async () => {
     if (!ad || !slotId || isClosing) return;
 
-    // If user clicks X in the 3rd second or earlier (secondsRemaining >= 2), 
-    // wait until the ad finishes (5 seconds total)
-    if (secondsRemainingRef.current >= 2) {
-      setIsClosing(true);
-      // The countdown will continue and executeClose will be called when secondsRemaining reaches 0
-      // This is handled in the timer interval above - DO NOT call executeClose here
-      return;
-    }
-
-    // If in the last 2 seconds (secondsRemaining < 2), proceed with closing immediately
-    if (secondsRemainingRef.current < 2) {
-      executeClose();
-    }
+    // User can close anytime after the close button appears (from 3rd second onwards)
+    // No need to wait - close immediately when X is clicked
+    setIsClosing(true);
+    executeClose();
   };
 
   // Update ref when secondsRemaining changes

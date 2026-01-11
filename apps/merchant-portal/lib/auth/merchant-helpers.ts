@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import type { Database } from '@spotx/shared-config/types'
 
 /**
  * Get the current authenticated merchant.
@@ -110,10 +111,12 @@ export async function getCurrentMerchant() {
   // Update merchant with auth_user_id if missing (shouldn't happen, but just in case)
   if (merchant && !merchant.auth_user_id) {
     console.log('Updating merchant with auth_user_id:', user.id)
-    // Type assertion needed due to TypeScript inference issue
-    const { error: updateError } = await (supabase
-      .from('merchants') as any)
-      .update({ auth_user_id: user.id })
+    // Use proper type for update
+    type MerchantUpdate = Database['public']['Tables']['merchants']['Update']
+    const updateData: MerchantUpdate = { auth_user_id: user.id }
+    const { error: updateError } = await supabase
+      .from('merchants')
+      .update(updateData)
       .eq('id', merchant.id)
     
     if (updateError) {

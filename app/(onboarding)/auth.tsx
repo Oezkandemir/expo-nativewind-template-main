@@ -145,7 +145,7 @@ export default function AuthScreen() {
       <SafeAreaView className="flex-1 bg-background">
         <ScrollView className="flex-1" contentContainerClassName="px-6 py-8 justify-center min-h-full">
           <View className="mb-8 items-center">
-            <Logo size={80} />
+            <Logo size="large" />
           </View>
 
           <Card>
@@ -205,10 +205,10 @@ export default function AuthScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-background">
+      <SafeAreaView className="flex-1 bg-background">
       <ScrollView className="flex-1" contentContainerClassName="px-6 py-8 justify-center min-h-full">
         <View className="mb-8 items-center">
-          <Logo size={80} />
+          <Logo size="large" />
           <Text variant="h1" className="text-center mt-4">
             SpotX
           </Text>

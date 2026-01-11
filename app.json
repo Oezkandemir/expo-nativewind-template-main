@@ -45,7 +45,7 @@
         "RECEIVE_BOOT_COMPLETED",
         "VIBRATE"
       ],
-      "package": "com.exponativewindtemplate.app",
+
       "googleServicesFile": "./google-services.json",
       "versionCode": 2
     },

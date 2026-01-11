@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "514290450822",
+    "project_id": "spotx-52cc3",
+    "storage_bucket": "spotx-52cc3.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:514290450822:android:b6235b6bc45d9a92fa6c07",
+        "android_client_info": {
+          "package_name": "com.exponativewindtemplate.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBTRc-3fErnGLwI5TyTd076mNUJaiWu-Ow"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

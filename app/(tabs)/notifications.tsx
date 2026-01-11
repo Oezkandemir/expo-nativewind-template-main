@@ -155,10 +155,10 @@ export default function NotificationsScreen() {
           </View>
 
           {/* Status Card */}
-          <Card className="mb-4 overflow-hidden" style={{ backgroundColor: '#1E293B', 
+          <Card className="mb-4 overflow-hidden" style={{ 
+            backgroundColor: hasPermission ? 'rgba(34, 197, 94, 0.05)' : 'rgba(239, 68, 68, 0.05)',
             borderWidth: 2,
             borderColor: hasPermission ? 'rgba(34, 197, 94, 0.3)' : 'rgba(239, 68, 68, 0.3)',
-            backgroundColor: hasPermission ? 'rgba(34, 197, 94, 0.05)' : 'rgba(239, 68, 68, 0.05)',
           }}>
             <CardHeader className="pb-3">
               <CardTitle>

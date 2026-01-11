@@ -73,10 +73,10 @@ export default function RewardsScreen() {
         {/* Summary Cards */}
         {summary && (
           <View className="gap-4 mb-6">
-            <Card className="overflow-hidden" style={{ backgroundColor: '#1E293B', 
+            <Card className="overflow-hidden" style={{ 
+              backgroundColor: 'rgba(139, 92, 246, 0.05)',
               borderWidth: 2,
               borderColor: 'rgba(139, 92, 246, 0.3)',
-              backgroundColor: 'rgba(139, 92, 246, 0.05)',
             }}>
               <CardContent className="pt-6">
                 <View className="flex-row items-center gap-2 mb-3">
@@ -109,10 +109,10 @@ export default function RewardsScreen() {
               </CardContent>
             </Card>
 
-            <Card className="overflow-hidden" style={{ backgroundColor: '#1E293B', 
+            <Card className="overflow-hidden" style={{ 
+              backgroundColor: 'rgba(251, 146, 60, 0.05)',
               borderWidth: 2,
               borderColor: 'rgba(251, 146, 60, 0.3)',
-              backgroundColor: 'rgba(251, 146, 60, 0.05)',
             }}>
               <CardContent className="pt-6">
                 <View className="flex-row items-center gap-2 mb-3">

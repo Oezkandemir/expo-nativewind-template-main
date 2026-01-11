@@ -103,8 +103,9 @@ export default function HistoryScreen() {
             
             if (!campaignError && campaignData) {
               // Use name if available, otherwise use title
-              campaignName = campaignData.name || campaignData.title || 'Unbekannte Kampagne';
-              campaignTitle = campaignData.title;
+              const data = campaignData as { name?: string; title?: string };
+              campaignName = data.name || data.title || 'Unbekannte Kampagne';
+              campaignTitle = data.title;
             } else {
               // Fallback: try campaign service methods
               // Try getCampaignName first (simpler, faster)

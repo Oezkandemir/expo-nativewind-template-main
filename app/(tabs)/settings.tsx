@@ -55,8 +55,11 @@ export default function SettingsScreen() {
     setNotificationsEnabled(enabled);
     await updateUser({
       preferences: {
-        ...user?.preferences,
         notificationsEnabled: enabled,
+        adFrequencyPreference: user?.preferences?.adFrequencyPreference,
+        widgets: {
+          historyEnabled: user?.preferences?.widgets?.historyEnabled || false,
+        },
       },
     });
 
@@ -69,9 +72,9 @@ export default function SettingsScreen() {
     setHistoryWidgetEnabled(enabled);
     await updateUser({
       preferences: {
-        ...user?.preferences,
+        notificationsEnabled: user?.preferences?.notificationsEnabled || false,
+        adFrequencyPreference: user?.preferences?.adFrequencyPreference,
         widgets: {
-          ...user?.preferences?.widgets,
           historyEnabled: enabled,
         },
       },

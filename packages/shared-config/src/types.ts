@@ -104,6 +104,7 @@ export interface Database {
         Row: {
           id: string
           user_id: string | null
+          auth_user_id: string | null
           company_name: string
           business_email: string
           phone: string | null
@@ -118,6 +119,7 @@ export interface Database {
         Insert: {
           id?: string
           user_id?: string | null
+          auth_user_id?: string | null
           company_name: string
           business_email: string
           phone?: string | null
@@ -132,6 +134,7 @@ export interface Database {
         Update: {
           id?: string
           user_id?: string | null
+          auth_user_id?: string | null
           company_name?: string
           business_email?: string
           phone?: string | null

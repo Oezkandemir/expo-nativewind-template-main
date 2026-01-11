@@ -4,30 +4,6 @@ apply plugin: "com.facebook.react"
 
 def projectRoot = rootDir.getAbsoluteFile().getParentFile().getAbsolutePath()
 
-// Conditionally apply Google services plugin only if google-services.json exists
-// Check multiple possible locations (root, app directory, parent directory)
-def hasGoogleServices = false
-def possiblePaths = [
-    file("google-services.json"),  // Current directory (android/app/)
-    file("../google-services.json"), // Parent directory (android/)
-    file("../../google-services.json") // Root directory
-]
-
-for (def path : possiblePaths) {
-    if (path.exists()) {
-        hasGoogleServices = true
-        println "Found google-services.json at: ${path.absolutePath}"
-        break
-    }
-}
-
-if (hasGoogleServices) {
-    apply plugin: "com.google.gms.google-services"
-    println "Google Services plugin applied - google-services.json found"
-} else {
-    println "Google Services plugin skipped - google-services.json not found (this is OK for development)"
-}
-
 /**
  * This is the configuration block to customize your React Native Android app.
  * By default you don't need to apply any configuration, just uncomment the lines you need.
@@ -117,7 +93,7 @@ android {
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 2
-        versionName "0.1.1"
+        versionName "2.0.0"
     }
     signingConfigs {
         debug {
@@ -198,21 +174,6 @@ dependencies {
     } else {
         implementation jscFlavor
     }
-
-    // Firebase dependencies - only added if google-services.json is present
-    // Use the same check as above to ensure consistency
-    if (hasGoogleServices) {
-        // Import the Firebase BoM (Bill of Materials)
-        // This ensures all Firebase libraries use compatible versions
-        implementation platform('com.google.firebase:firebase-bom:33.7.0')
-
-        // Firebase Cloud Messaging for push notifications
-        implementation 'com.google.firebase:firebase-messaging'
-
-        // Firebase Analytics (optional but recommended)
-        implementation 'com.google.firebase:firebase-analytics'
-        println "Firebase dependencies added"
-    } else {
-        println "Firebase dependencies skipped - google-services.json not found"
-    }
 }
+
+apply plugin: 'com.google.gms.google-services'

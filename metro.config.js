@@ -75,4 +75,13 @@ if (!config.watchFolders) {
 // Double-check projectRoot is set (critical for path.relative() to work)
 config.projectRoot = projectRoot;
 
+// Resolve "react-native-worklets" to "react-native-worklets-core"
+config.resolver = {
+  ...config.resolver,
+  extraNodeModules: {
+    ...config.resolver?.extraNodeModules,
+    "react-native-worklets": require.resolve("react-native-worklets-core"),
+  },
+};
+
 module.exports = config;
