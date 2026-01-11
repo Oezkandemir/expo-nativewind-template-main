@@ -2,7 +2,7 @@
   "expo": {
     "name": "spotx",
     "slug": "spotx",
-    "version": "0.1.1",
+    "version": "2.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "myapp",
@@ -21,9 +21,11 @@
         "NSCameraUsageDescription": "This app needs access to your camera to take photos.",
         "NSLocationWhenInUseUsageDescription": "This app needs access to your location to provide location-based features.",
         "NSContactsUsageDescription": "This app needs access to your contacts to help you connect with friends.",
-        "NSUserTrackingUsageDescription": "This app needs permission to track your activity across other apps and websites."
+        "NSUserTrackingUsageDescription": "This app needs permission to track your activity across other apps and websites.",
+        "ITSAppUsesNonExemptEncryption": false
       },
-      "bundleIdentifier": "com.exponativewindtemplate.app"
+      "bundleIdentifier": "com.exponativewindtemplate.app",
+      "buildNumber": "2"
     },
     "android": {
       "adaptiveIcon": {
@@ -44,7 +46,8 @@
         "VIBRATE"
       ],
       "package": "com.exponativewindtemplate.app",
-      "googleServicesFile": "./google-services.json"
+      "googleServicesFile": "./google-services.json",
+      "versionCode": 2
     },
     "web": {
       "bundler": "metro",
@@ -81,6 +84,11 @@
       "router": {},
       "eas": {
         "projectId": "8ddfb1eb-b6c2-44dc-ad88-00e4652e956c"
+      }
+    },
+    "autolinking": {
+      "android": {
+        "exclude": ["react-native-worklets"]
       }
     },
     "owner": "demiroo"
