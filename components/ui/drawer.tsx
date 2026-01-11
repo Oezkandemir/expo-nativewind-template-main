@@ -13,7 +13,6 @@ import { cn } from "./utils/cn";
 import { Menu, X } from "lucide-react-native";
 import { iconWithClassName } from "./lib/icons/icon-with-classname";
 import { SafeAreaView } from "./safe-area-view";
-import { Text } from "./text";
 
 const MenuIcon = iconWithClassName(Menu);
 const XIcon = iconWithClassName(X);

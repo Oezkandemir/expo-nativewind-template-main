@@ -1,0 +1,49 @@
+=== FINALE TEXTE FÜR GOOGLE PLAY CONSOLE ===
+(Nach Entfernung der Hintergrund-Standortberechtigung)
+
+═══════════════════════════════════════════════════════════════
+1. FOTOS UND VIDEOS BERECHTIGUNGEN
+═══════════════════════════════════════════════════════════════
+
+READ_MEDIA_IMAGES (max. 250 Zeichen):
+-----------------------------------------------------------
+Unsere App benötigt Zugriff auf Fotos, um Benutzern zu ermöglichen, Profilbilder hochzuladen und zu ändern, Screenshots von Belohnungen zu speichern, und Werbeinhalte mit Bildern zu personalisieren. Der Zugriff erfolgt nur auf Benutzeranfrage und wird nicht im Hintergrund verwendet.
+-----------------------------------------------------------
+(Zeichen: 199/250)
+
+READ_MEDIA_VIDEO (max. 250 Zeichen):
+-----------------------------------------------------------
+Unsere App benötigt Zugriff auf Videos, um Benutzern zu ermöglichen, Videoinhalte für ihr Profil hochzuladen und Werbevideos anzuzeigen. Der Zugriff erfolgt nur auf explizite Benutzeranfrage und wird nicht im Hintergrund verwendet.
+-----------------------------------------------------------
+(Zeichen: 195/250)
+
+═══════════════════════════════════════════════════════════════
+2. STANDORTBERECHTIGUNGEN (NUR VORDERGRUND)
+═══════════════════════════════════════════════════════════════
+
+Zweck der App (max. 500 Zeichen):
+-----------------------------------------------------------
+spotx ist eine Kampagnen- und Belohnungs-App, die es Benutzern ermöglicht, wichtige Kampagnen zu unterstützen und dafür Belohnungen zu erhalten. Die App bietet personalisierte Kampagnen basierend auf Benutzerinteressen und ermöglicht die Teilnahme an zeitgesteuerten Kampagnen-Slots mit vollständiger Belohnungsübersicht.
+-----------------------------------------------------------
+(Zeichen: 199/500)
+
+Standortzugriff (max. 500 Zeichen):
+-----------------------------------------------------------
+Unsere App verwendet Standortzugriff nur im Vordergrund, um Benutzern standortbasierte Kampagnen-Vorschläge anzuzeigen, wenn sie die App aktiv nutzen. Der Standort wird verwendet, um relevante, geografisch passende Kampagnen zu identifizieren und anzuzeigen. Kein Hintergrundzugriff.
+-----------------------------------------------------------
+(Zeichen: 199/500)
+
+Videoanleitung:
+-----------------------------------------------------------
+NICHT ERFORDERLICH - Da die App nur Vordergrund-Standortzugriff verwendet, ist kein Video erforderlich.
+
+═══════════════════════════════════════════════════════════════
+✅ STATUS
+═══════════════════════════════════════════════════════════════
+
+✅ ACCESS_BACKGROUND_LOCATION wurde aus app.json entfernt
+✅ NSLocationAlwaysAndWhenInUseUsageDescription wurde entfernt
+✅ Code wurde aktualisiert, um nur Vordergrund-Standortzugriff zu verwenden
+✅ Kein Video erforderlich (nur für Hintergrund-Zugriff nötig)
+
+Diese Texte können direkt in die Google Play Console kopiert werden.

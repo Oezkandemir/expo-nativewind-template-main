@@ -1,0 +1,27 @@
+=== TEXT FÜR GOOGLE PLAY CONSOLE ===
+
+READ_MEDIA_IMAGES (max. 250 Zeichen):
+-----------------------------------------------------------
+Unsere App benötigt Zugriff auf Fotos, um Benutzern zu ermöglichen, Profilbilder hochzuladen und zu ändern, Screenshots von Belohnungen zu speichern, und Werbeinhalte mit Bildern zu personalisieren. Der Zugriff erfolgt nur auf Benutzeranfrage und wird nicht im Hintergrund verwendet.
+-----------------------------------------------------------
+(Zeichen: 199/250)
+
+READ_MEDIA_VIDEO (max. 250 Zeichen):
+-----------------------------------------------------------
+Unsere App benötigt Zugriff auf Videos, um Benutzern zu ermöglichen, Videoinhalte für ihr Profil hochzuladen und Werbevideos anzuzeigen. Der Zugriff erfolgt nur auf explizite Benutzeranfrage und wird nicht im Hintergrund verwendet.
+-----------------------------------------------------------
+(Zeichen: 195/250)
+
+=== ALTERNATIVE TEXTE (falls App nur gelegentlich zugreift) ===
+
+READ_MEDIA_IMAGES (Alternative):
+-----------------------------------------------------------
+Unsere App verwendet die Android-Bildauswahl für gelegentlichen Zugriff auf Fotos. Diese Berechtigung wird nur benötigt, wenn Benutzer explizit ein Profilbild auswählen oder Screenshots speichern möchten. Kein Hintergrundzugriff.
+-----------------------------------------------------------
+(Zeichen: 199/250)
+
+READ_MEDIA_VIDEO (Alternative):
+-----------------------------------------------------------
+Unsere App verwendet die Android-Videoauswahl für gelegentlichen Zugriff auf Videos. Diese Berechtigung wird nur benötigt, wenn Benutzer explizit Videoinhalte auswählen möchten. Kein Hintergrundzugriff.
+-----------------------------------------------------------
+(Zeichen: 195/250)

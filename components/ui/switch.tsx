@@ -2,7 +2,6 @@ import * as React from "react";
 import { 
   Platform, 
   Switch as RNSwitch, 
-  type SwitchProps as RNSwitchProps,
   Pressable,
   View,
   type PressableProps 
@@ -24,10 +23,17 @@ const Switch = React.forwardRef<
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
 
+  // Web implementation handler - must be defined before conditional return
+  const handlePress = React.useCallback(() => {
+    if (!disabled && onCheckedChange) {
+      onCheckedChange(!checked);
+    }
+  }, [checked, onCheckedChange, disabled]);
+
   // Use native Switch on Android, custom on Web
   if (Platform.OS === "android") {
     // Extract only valid Switch props
-    const { style, ...validSwitchProps } = props as any;
+    const { style } = props as any;
     return (
       <RNSwitch
         ref={ref}
@@ -43,13 +49,6 @@ const Switch = React.forwardRef<
       />
     );
   }
-
-  // Web implementation
-  const handlePress = React.useCallback(() => {
-    if (!disabled && onCheckedChange) {
-      onCheckedChange(!checked);
-    }
-  }, [checked, onCheckedChange, disabled]);
 
   return (
     <Pressable

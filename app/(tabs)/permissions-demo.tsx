@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Platform, Linking } from "react-native";
+import { View, Platform, Linking, Alert, Pressable } from "react-native";
 import {
   SafeAreaView,
   ScrollView,
@@ -13,14 +13,12 @@ import {
   useCameraPermissions,
   usePermission,
 } from "@/components/ui";
-import * as Location from "expo-location";
 import * as MediaLibrary from "expo-media-library";
 import * as Contacts from "expo-contacts";
 import * as Notifications from "expo-notifications";
 import * as Clipboard from 'expo-clipboard';
 import { Camera, MapPin, Image, Users, Bell } from "lucide-react-native";
 import { iconWithClassName } from "@/components/ui/lib/icons/icon-with-classname";
-import { Alert, Pressable } from "react-native";
 
 const CameraIcon = iconWithClassName(Camera);
 const MapPinIcon = iconWithClassName(MapPin);
@@ -34,9 +32,6 @@ export default function PermissionsDemo() {
   
   // Other permissions using the general hook
   const locationPermission = usePermission("locationForeground");
-  const mediaLibraryPermission = usePermission("mediaLibrary");
-  const contactsPermission = usePermission("contacts");
-  const notificationsPermission = usePermission("notifications");
 
   const handleCameraRequest = async () => {
     // Check if we need to open settings

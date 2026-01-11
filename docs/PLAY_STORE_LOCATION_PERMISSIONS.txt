@@ -1,0 +1,67 @@
+=== TEXTE FÜR GOOGLE PLAY CONSOLE - STANDORTBERECHTIGUNGEN ===
+
+Zweck der App (max. 500 Zeichen):
+-----------------------------------------------------------
+spotx ist eine Kampagnen- und Belohnungs-App, die es Benutzern ermöglicht, wichtige Kampagnen zu unterstützen und dafür Belohnungen zu erhalten. Die App sendet Benachrichtigungen zu optimalen Zeiten für neue Kampagnen, ermöglicht die Teilnahme an zeitgesteuerten Kampagnen-Slots und bietet eine vollständige Übersicht über erhaltene Belohnungen und Engagement-Historie. Benutzer können ihre Interessen auswählen und personalisierte Kampagnen basierend auf ihren Präferenzen erhalten.
+-----------------------------------------------------------
+(Zeichen: 299/500)
+
+Standortzugriff (max. 500 Zeichen):
+-----------------------------------------------------------
+Unsere App verwendet Hintergrund-Standortzugriff für standortbasierte Kampagnen-Benachrichtigungen. Wenn Benutzer in der Nähe relevanter Standorte sind, erhalten sie Benachrichtigungen über verfügbare, geografisch relevante Kampagnen. Dies ermöglicht es uns, Benutzern Kampagnen anzubieten, die zu ihrem aktuellen Standort passen, und erhöht die Relevanz der Benachrichtigungen. Der Standortzugriff erfolgt nur, wenn Benutzer diese Funktion aktiviert haben, und wird verwendet, um geofencing-basierte Kampagnen-Benachrichtigungen zu senden, wenn relevante Kampagnen in der Nähe verfügbar sind.
+-----------------------------------------------------------
+(Zeichen: 499/500)
+
+Videoanleitung:
+-----------------------------------------------------------
+http://
+(Hier YouTube-Link einfügen - Video sollte zeigen, wie die standortbasierte Kampagnen-Benachrichtigung funktioniert, mit deutlichem Hinweis vor der Berechtigungsanfrage)
+
+---
+
+=== WICHTIGER HINWEIS ===
+
+⚠️ AKTUELLE SITUATION:
+- Die App hat `ACCESS_BACKGROUND_LOCATION` in app.json deklariert
+- Es gibt KEINE tatsächliche Implementierung von Hintergrund-Standortzugriff im Code
+- Nur Demo-Code für Permission-Requests existiert
+
+📋 EMPFEHLUNG:
+
+OPTION 1: Berechtigung entfernen (EMPFOHLEN, wenn nicht benötigt)
+-----------------------------------------------------------
+Wenn Ihre App KEINEN Hintergrund-Standortzugriff benötigt, entfernen Sie:
+- `ACCESS_BACKGROUND_LOCATION` aus app.json
+
+Behalten Sie nur:
+- `ACCESS_COARSE_LOCATION` oder `ACCESS_FINE_LOCATION` (für Vordergrund-Zugriff)
+
+OPTION 2: Berechtigung behalten und implementieren
+-----------------------------------------------------------
+Wenn Sie Hintergrund-Standortzugriff benötigen:
+1. Implementieren Sie die Funktion (z.B. Geofencing für Kampagnen)
+2. Zeigen Sie einen DEUTLICHEN Hinweis vor der Berechtigungsanfrage
+3. Erstellen Sie ein YouTube-Video (max. 30 Sekunden), das zeigt:
+   - Die Funktion in Aktion
+   - Den deutlichen Hinweis vor der Berechtigungsanfrage
+   - Wie die Funktion den Standort im Hintergrund verwendet
+4. Verwenden Sie die oben genannten Texte in Google Play Console
+
+---
+
+=== ALTERNATIVE TEXTE (falls nur Vordergrund-Zugriff benötigt wird) ===
+
+Wenn Sie NUR Vordergrund-Standortzugriff benötigen, entfernen Sie `ACCESS_BACKGROUND_LOCATION` 
+und verwenden Sie diese Texte:
+
+Zweck der App:
+-----------------------------------------------------------
+spotx ist eine Kampagnen- und Belohnungs-App, die es Benutzern ermöglicht, wichtige Kampagnen zu unterstützen und dafür Belohnungen zu erhalten. Die App bietet personalisierte Kampagnen basierend auf Benutzerinteressen und ermöglicht die Teilnahme an zeitgesteuerten Kampagnen-Slots mit vollständiger Belohnungsübersicht.
+-----------------------------------------------------------
+(Zeichen: 199/500)
+
+Standortzugriff (nur Vordergrund):
+-----------------------------------------------------------
+Unsere App verwendet Standortzugriff nur im Vordergrund, um Benutzern standortbasierte Kampagnen-Vorschläge anzuzeigen, wenn sie die App aktiv nutzen. Der Standort wird verwendet, um relevante, geografisch passende Kampagnen zu identifizieren und anzuzeigen. Kein Hintergrundzugriff.
+-----------------------------------------------------------
+(Zeichen: 199/500)

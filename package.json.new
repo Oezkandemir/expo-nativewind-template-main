@@ -1,0 +1,24 @@
+{
+  "name": "spotx-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev:portal",
+    "dev:portal": "npm run dev --workspace=apps/merchant-portal",
+    "dev:native": "npm run dev --workspace=apps/native",
+    "build:portal": "npm run build --workspace=apps/merchant-portal",
+    "build:native:ios": "npm run build:ios --workspace=apps/native",
+    "build:native:android": "npm run build:android --workspace=apps/native",
+    "lint": "npm run lint --workspaces",
+    "typecheck": "npm run typecheck --workspaces",
+    "clean": "rm -rf apps/*/node_modules apps/*/.next apps/*/dist packages/*/node_modules node_modules"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
+}

@@ -1,22 +1,15 @@
 import * as React from "react";
-import BottomSheet, {
+import {
   BottomSheetModal,
-  BottomSheetModalProvider,
   BottomSheetView,
   BottomSheetBackdrop,
 } from "@gorhom/bottom-sheet";
-import { View, Pressable, useWindowDimensions, Modal, Platform } from "react-native";
+import { View, Pressable, useWindowDimensions, Platform } from "react-native";
 import { cn } from "./utils/cn";
 import { X } from "lucide-react-native";
 import { iconWithClassName } from "./lib/icons/icon-with-classname";
 
 const XIcon = iconWithClassName(X);
-
-interface SheetProps {
-  children: React.ReactNode;
-  open?: boolean;
-  onOpenChange?: (open: boolean) => void;
-}
 
 const Sheet = ({ children, open = false, onOpenChange = () => {} }: { 
   children: React.ReactNode;
@@ -105,6 +98,7 @@ interface SheetContentProps {
   className?: string;
   hideCloseButton?: boolean;
   snapPoints?: (string | number)[];
+  topInset?: number;
   onChange?: (index: number) => void;
   onOpenChange?: (open: boolean) => void;
 }
@@ -112,14 +106,31 @@ interface SheetContentProps {
 const SheetContent = React.forwardRef<
   BottomSheetModal,
   SheetContentProps
->(({ children, className, hideCloseButton, snapPoints = ["25%", "50%", "90%"], onChange, onOpenChange }, ref) => {
+>(({ children, className, hideCloseButton, snapPoints = ["25%", "50%", "90%"], topInset, onChange, onOpenChange }, ref) => {
   const { height } = useWindowDimensions();
+  
+  // Calculate actual snap points - if topInset is provided, adjust snap points
+  const calculatedSnapPoints = React.useMemo(() => {
+    if (topInset !== undefined && typeof snapPoints[0] === 'number') {
+      // If we have a number and topInset, use the number directly (already calculated)
+      return snapPoints;
+    }
+    // Convert percentage strings to numbers if needed
+    return snapPoints.map(point => {
+      if (typeof point === 'string' && point.endsWith('%')) {
+        const percentage = parseFloat(point) / 100;
+        return topInset ? height * percentage - topInset : height * percentage;
+      }
+      return point;
+    });
+  }, [snapPoints, height, topInset]);
 
   return (
     <BottomSheetModal
       ref={ref}
-      index={1}
-      snapPoints={snapPoints}
+      index={calculatedSnapPoints.length > 1 ? calculatedSnapPoints.length - 1 : 0}
+      snapPoints={calculatedSnapPoints}
+      topInset={topInset || 0}
       enablePanDownToClose
       onChange={onChange}
       backdropComponent={(props) => (
@@ -145,7 +156,9 @@ const SheetContent = React.forwardRef<
           "flex-1 bg-background rounded-t-3xl px-4",
           className
         )}
-        style={{ minHeight: height * 0.9 }}
+        style={{ 
+          minHeight: topInset ? height - topInset : height * 0.9,
+        }}
       >
         {!hideCloseButton && (
           <Pressable

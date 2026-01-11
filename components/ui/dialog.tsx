@@ -3,7 +3,6 @@ import {
   Modal,
   View,
   Pressable,
-  type ModalProps,
   Platform,
   KeyboardAvoidingView,
 } from "react-native";
@@ -12,11 +11,6 @@ import { X } from "lucide-react-native";
 import { iconWithClassName } from "./lib/icons/icon-with-classname";
 
 const XIcon = iconWithClassName(X);
-
-interface DialogProps extends Omit<ModalProps, "visible"> {
-  open?: boolean;
-  onOpenChange?: (open: boolean) => void;
-}
 
 const DialogContext = React.createContext<{
   open: boolean;

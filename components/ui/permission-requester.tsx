@@ -39,7 +39,7 @@ const permissionInfoMap: Record<PermissionType, PermissionInfo> = {
   },
   location: {
     title: "Location Access",
-    description: "Allow the app to access your location",
+    description: "Allow the app to access your location while using the app",
     icon: <MapPinIcon className="h-12 w-12 text-primary" />,
   },
   locationForeground: {
@@ -94,7 +94,7 @@ export function PermissionRequester({
         // Skip checking for camera in this example
         return;
       } else if (permission === "location") {
-        permissionStatus = await Location.getBackgroundPermissionsAsync();
+        permissionStatus = await Location.getForegroundPermissionsAsync();
       } else if (permission === "locationForeground") {
         permissionStatus = await Location.getForegroundPermissionsAsync();
       } else if (permission === "mediaLibrary") {
@@ -136,7 +136,7 @@ export function PermissionRequester({
         onPermissionGranted?.();
         return;
       } else if (permission === "location") {
-        permissionResult = await Location.requestBackgroundPermissionsAsync();
+        permissionResult = await Location.requestForegroundPermissionsAsync();
       } else if (permission === "locationForeground") {
         permissionResult = await Location.requestForegroundPermissionsAsync();
       } else if (permission === "mediaLibrary") {
@@ -216,7 +216,7 @@ export function usePermission(permission: PermissionType) {
         // For camera, you need to use useCameraPermissions hook
         return;
       } else if (permission === "location") {
-        permissionStatus = await Location.getBackgroundPermissionsAsync();
+        permissionStatus = await Location.getForegroundPermissionsAsync();
       } else if (permission === "locationForeground") {
         permissionStatus = await Location.getForegroundPermissionsAsync();
       } else if (permission === "mediaLibrary") {
@@ -248,7 +248,7 @@ export function usePermission(permission: PermissionType) {
         setStatus("granted");
         return true;
       } else if (permission === "location") {
-        permissionResult = await Location.requestBackgroundPermissionsAsync();
+        permissionResult = await Location.requestForegroundPermissionsAsync();
       } else if (permission === "locationForeground") {
         permissionResult = await Location.requestForegroundPermissionsAsync();
       } else if (permission === "mediaLibrary") {

@@ -2,7 +2,7 @@ import * as React from "react";
 import { TextInput, type TextInputProps, Platform } from "react-native";
 import { cn } from "./utils/cn";
 
-interface InputProps extends TextInputProps {}
+type InputProps = TextInputProps;
 
 const Input = React.forwardRef<
   React.ElementRef<typeof TextInput>,

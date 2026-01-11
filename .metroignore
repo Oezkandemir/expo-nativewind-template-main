@@ -1,0 +1,13 @@
+# Ignore merchant-portal (Next.js server code)
+apps/merchant-portal/
+
+# Ignore any server-side code
+**/server/**
+**/api/**
+
+# Ignore Next.js specific files
+**/next.config.*
+**/middleware.*
+**/route.ts
+**/page.tsx
+**/layout.tsx

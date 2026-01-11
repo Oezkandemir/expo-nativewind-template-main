@@ -1,0 +1,75 @@
+=== GOOGLE PLAY CONSOLE - ALLE BEREchtIGUNGEN ===
+
+═══════════════════════════════════════════════════════════════
+1. FOTOS UND VIDEOS BERECHTIGUNGEN
+═══════════════════════════════════════════════════════════════
+
+READ_MEDIA_IMAGES (max. 250 Zeichen):
+-----------------------------------------------------------
+Unsere App benötigt Zugriff auf Fotos, um Benutzern zu ermöglichen, Profilbilder hochzuladen und zu ändern, Screenshots von Belohnungen zu speichern, und Werbeinhalte mit Bildern zu personalisieren. Der Zugriff erfolgt nur auf Benutzeranfrage und wird nicht im Hintergrund verwendet.
+-----------------------------------------------------------
+(Zeichen: 199/250)
+
+READ_MEDIA_VIDEO (max. 250 Zeichen):
+-----------------------------------------------------------
+Unsere App benötigt Zugriff auf Videos, um Benutzern zu ermöglichen, Videoinhalte für ihr Profil hochzuladen und Werbevideos anzuzeigen. Der Zugriff erfolgt nur auf explizite Benutzeranfrage und wird nicht im Hintergrund verwendet.
+-----------------------------------------------------------
+(Zeichen: 195/250)
+
+═══════════════════════════════════════════════════════════════
+2. STANDORTBERECHTIGUNGEN
+═══════════════════════════════════════════════════════════════
+
+Zweck der App (max. 500 Zeichen):
+-----------------------------------------------------------
+spotx ist eine Kampagnen- und Belohnungs-App, die es Benutzern ermöglicht, wichtige Kampagnen zu unterstützen und dafür Belohnungen zu erhalten. Die App sendet Benachrichtigungen zu optimalen Zeiten für neue Kampagnen, ermöglicht die Teilnahme an zeitgesteuerten Kampagnen-Slots und bietet eine vollständige Übersicht über erhaltene Belohnungen und Engagement-Historie. Benutzer können ihre Interessen auswählen und personalisierte Kampagnen basierend auf ihren Präferenzen erhalten.
+-----------------------------------------------------------
+(Zeichen: 299/500)
+
+Standortzugriff (max. 500 Zeichen):
+-----------------------------------------------------------
+Unsere App verwendet Hintergrund-Standortzugriff für standortbasierte Kampagnen-Benachrichtigungen. Wenn Benutzer in der Nähe relevanter Standorte sind, erhalten sie Benachrichtigungen über verfügbare, geografisch relevante Kampagnen. Dies ermöglicht es uns, Benutzern Kampagnen anzubieten, die zu ihrem aktuellen Standort passen, und erhöht die Relevanz der Benachrichtigungen. Der Standortzugriff erfolgt nur, wenn Benutzer diese Funktion aktiviert haben, und wird verwendet, um geofencing-basierte Kampagnen-Benachrichtigungen zu senden, wenn relevante Kampagnen in der Nähe verfügbar sind.
+-----------------------------------------------------------
+(Zeichen: 499/500)
+
+Videoanleitung:
+-----------------------------------------------------------
+http://
+(Hier YouTube-Link einfügen - Video sollte zeigen, wie die standortbasierte Kampagnen-Benachrichtigung funktioniert, mit deutlichem Hinweis vor der Berechtigungsanfrage, max. 30 Sekunden)
+
+═══════════════════════════════════════════════════════════════
+⚠️ WICHTIGE HINWEISE
+═══════════════════════════════════════════════════════════════
+
+AKTUELLE SITUATION:
+- Die App hat diese Berechtigungen deklariert, aber KEINE tatsächliche Implementierung
+- Nur Demo-Code für Permission-Requests existiert
+- Keine echte Verwendung von Medienzugriff oder Hintergrund-Standort
+
+EMPFEHLUNGEN:
+
+1. FOTOS/VIDEOS:
+   - Wenn nicht benötigt: Entfernen Sie READ_EXTERNAL_STORAGE und WRITE_EXTERNAL_STORAGE
+   - Verwenden Sie stattdessen expo-image-picker (nutzt Android Photo Picker)
+   - ODER: Verwenden Sie die oben genannten Texte, wenn Sie die Berechtigungen behalten
+
+2. STANDORT:
+   - Wenn kein Hintergrund-Zugriff benötigt: Entfernen Sie ACCESS_BACKGROUND_LOCATION
+   - Behalten Sie nur ACCESS_FINE_LOCATION oder ACCESS_COARSE_LOCATION
+   - ODER: Implementieren Sie die Funktion und verwenden Sie die oben genannten Texte
+
+═══════════════════════════════════════════════════════════════
+ALTERNATIVE TEXTE (falls nur Vordergrund-Standort benötigt)
+═══════════════════════════════════════════════════════════════
+
+Zweck der App (Vordergrund-Version):
+-----------------------------------------------------------
+spotx ist eine Kampagnen- und Belohnungs-App, die es Benutzern ermöglicht, wichtige Kampagnen zu unterstützen und dafür Belohnungen zu erhalten. Die App bietet personalisierte Kampagnen basierend auf Benutzerinteressen und ermöglicht die Teilnahme an zeitgesteuerten Kampagnen-Slots mit vollständiger Belohnungsübersicht.
+-----------------------------------------------------------
+(Zeichen: 199/500)
+
+Standortzugriff (nur Vordergrund):
+-----------------------------------------------------------
+Unsere App verwendet Standortzugriff nur im Vordergrund, um Benutzern standortbasierte Kampagnen-Vorschläge anzuzeigen, wenn sie die App aktiv nutzen. Der Standort wird verwendet, um relevante, geografisch passende Kampagnen zu identifizieren und anzuzeigen. Kein Hintergrundzugriff.
+-----------------------------------------------------------
+(Zeichen: 199/500)

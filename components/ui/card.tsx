@@ -32,7 +32,7 @@ import { cn } from "./utils/cn";
  * ```
  */
 
-interface CardProps extends ViewProps {}
+type CardProps = ViewProps;
 
 const Card = React.forwardRef<React.ElementRef<typeof View>, CardProps>(
   ({ className, ...props }, ref) => (
