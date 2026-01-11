@@ -4,6 +4,7 @@ import { requireAdmin } from '@/lib/auth/admin-helpers'
 import Link from 'next/link'
 import { ArrowLeft, Users, Eye, Activity, Euro, Calendar, Search, Filter, UserX, UserCheck } from 'lucide-react'
 import UserActions from '../components/UserActions'
+import type { Database as DatabaseType } from '@spotx/shared-config/types'
 
 export default async function AdminUsersPage({
   searchParams,
@@ -34,6 +35,15 @@ export default async function AdminUsersPage({
     .from('rewards')
     .select('user_id, amount')
   
+  // Type assertions
+  type UserRow = DatabaseType['public']['Tables']['users']['Row']
+  type AdViewRow = DatabaseType['public']['Tables']['ad_views']['Row']
+  type RewardRow = DatabaseType['public']['Tables']['rewards']['Row']
+  
+  const typedUsers = (allUsers || []) as Pick<UserRow, 'id' | 'email' | 'name' | 'created_at' | 'onboarding_complete' | 'notifications_enabled'>[]
+  const typedAdViews = (allAdViews || []) as Pick<AdViewRow, 'user_id' | 'campaign_id' | 'viewed_at' | 'created_at' | 'completed' | 'reward_earned'>[]
+  const typedRewards = (allRewards || []) as Pick<RewardRow, 'user_id' | 'amount'>[]
+  
   // Calculate statistics per user
   const userStatsMap = new Map<string, {
     totalViews: number
@@ -47,7 +57,7 @@ export default async function AdminUsersPage({
   const now = new Date()
   const onlineThreshold = new Date(now.getTime() - 15 * 60 * 1000) // 15 minutes
   
-  allUsers?.forEach((user) => {
+  typedUsers.forEach((user) => {
     userStatsMap.set(user.id, {
       totalViews: 0,
       completedViews: 0,
@@ -59,7 +69,7 @@ export default async function AdminUsersPage({
   })
   
   // Process ad views
-  allAdViews?.forEach((view) => {
+  typedAdViews.forEach((view) => {
     if (!view.user_id) return
     
     const stats = userStatsMap.get(view.user_id)
@@ -84,7 +94,7 @@ export default async function AdminUsersPage({
   })
   
   // Process rewards
-  allRewards?.forEach((reward) => {
+  typedRewards.forEach((reward) => {
     if (!reward.user_id) return
     
     const stats = userStatsMap.get(reward.user_id)
@@ -94,8 +104,13 @@ export default async function AdminUsersPage({
   })
   
   // Filter and search users
-  let filteredUsers = allUsers?.map((user) => ({
-    ...user,
+  let filteredUsers = typedUsers.map((user) => ({
+    id: user.id,
+    email: user.email,
+    name: user.name,
+    created_at: user.created_at,
+    onboarding_complete: user.onboarding_complete,
+    notifications_enabled: user.notifications_enabled,
     stats: userStatsMap.get(user.id) || {
       totalViews: 0,
       completedViews: 0,
@@ -104,7 +119,7 @@ export default async function AdminUsersPage({
       lastActivity: null,
       isOnline: false,
     },
-  })) || []
+  }))
   
   // Apply search filter
   if (searchQuery) {
@@ -124,7 +139,7 @@ export default async function AdminUsersPage({
   }
   
   // Calculate totals
-  const totalUsers = allUsers?.length || 0
+  const totalUsers = typedUsers.length
   const onlineUsers = filteredUsers.filter((u) => u.stats.isOnline).length
   const activeUsers = filteredUsers.filter((u) => u.stats.totalViews > 0).length
   

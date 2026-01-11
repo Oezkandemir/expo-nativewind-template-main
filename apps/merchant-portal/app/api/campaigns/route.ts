@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient, createServiceRoleClient } from '@/lib/supabase/server'
 import { getCurrentMerchant } from '@/lib/auth/merchant-helpers'
+import type { Database as DatabaseType } from '@spotx/shared-config/types'
 
 /**
  * POST /api/campaigns
@@ -83,7 +84,8 @@ export async function POST(request: Request) {
     }
 
     // Prepare campaign data
-    const campaignData = {
+    type CampaignInsert = DatabaseType['public']['Tables']['campaigns']['Insert']
+    const campaignData: CampaignInsert = {
       merchant_id: merchant.id,
       name,
       title,

@@ -31,7 +31,7 @@ export default async function AdminAnalyticsPage() {
   const onlineUserIds = new Set<string>()
   const userLastActivity = new Map<string, Date>()
   
-  allAdViews?.forEach((view) => {
+  allAdViews?.forEach((view: any) => {
     if (!view.user_id) return
     
     const viewDate = view.viewed_at ? new Date(view.viewed_at) : new Date(view.created_at)
@@ -62,7 +62,7 @@ export default async function AdminAnalyticsPage() {
     .from('rewards')
     .select('user_id, amount')
   
-  allUsers?.forEach((user) => {
+  allUsers?.forEach((user: any) => {
     userStatsMap.set(user.id, {
       totalViews: 0,
       completedViews: 0,
@@ -73,7 +73,7 @@ export default async function AdminAnalyticsPage() {
   })
   
   // Process ad views
-  allAdViews?.forEach((view) => {
+  allAdViews?.forEach((view: any) => {
     if (!view.user_id) return
     
     const stats = userStatsMap.get(view.user_id)
@@ -89,7 +89,7 @@ export default async function AdminAnalyticsPage() {
   })
   
   // Process rewards
-  allRewards?.forEach((reward) => {
+  allRewards?.forEach((reward: any) => {
     if (!reward.user_id) return
     
     const stats = userStatsMap.get(reward.user_id)
@@ -102,8 +102,8 @@ export default async function AdminAnalyticsPage() {
   const totalUsers = allUsers?.length || 0
   const onlineUsers = onlineUserIds.size
   const totalViews = allAdViews?.length || 0
-  const completedViews = allAdViews?.filter(v => v.completed).length || 0
-  const totalCampaignsSeen = new Set(allAdViews?.map(v => v.campaign_id).filter(Boolean)).size
+  const completedViews = allAdViews?.filter((v: any) => v.completed).length || 0
+  const totalCampaignsSeen = new Set(allAdViews?.map((v: any) => v.campaign_id).filter(Boolean)).size
   
   // Get campaign names
   const { data: campaigns } = await adminSupabase
@@ -111,7 +111,7 @@ export default async function AdminAnalyticsPage() {
     .select('id, name')
   
   const campaignMap = new Map<string, string>()
-  campaigns?.forEach((c) => {
+  campaigns?.forEach((c: any) => {
     campaignMap.set(c.id, c.name)
   })
   
@@ -132,7 +132,7 @@ export default async function AdminAnalyticsPage() {
   }
   
   // Sort users by activity (most active first)
-  const usersWithStats = allUsers?.map((user) => ({
+  const usersWithStats = allUsers?.map((user: any) => ({
     ...user,
     stats: userStatsMap.get(user.id) || {
       totalViews: 0,

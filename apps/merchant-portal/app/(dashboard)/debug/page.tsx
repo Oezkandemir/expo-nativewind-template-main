@@ -19,11 +19,13 @@ export default async function DebugPage() {
     .maybeSingle()
 
   // Try to fetch merchant by email
-  const { data: merchantByEmail, error: emailError } = await supabase
-    .from('merchants')
-    .select('*')
-    .eq('business_email', user.email)
-    .maybeSingle()
+  const { data: merchantByEmail, error: emailError } = user.email
+    ? await supabase
+        .from('merchants')
+        .select('*')
+        .eq('business_email', user.email)
+        .maybeSingle()
+    : { data: null, error: null }
 
   // Check all merchants (for debugging - remove in production)
   const { data: allMerchants, error: allError } = await supabase
@@ -121,7 +123,7 @@ export default async function DebugPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {allMerchants.map((m) => (
+                  {allMerchants?.map((m: any) => (
                     <tr key={m.id} className="border-b border-slate-700">
                       <td className="text-white font-mono text-xs p-2">{m.id.slice(0, 8)}...</td>
                       <td className="text-white p-2">{m.company_name}</td>

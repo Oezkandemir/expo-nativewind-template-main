@@ -3,6 +3,7 @@ import { createServiceRoleClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import { ArrowLeft, BarChart, Eye, Euro, Users, Calendar, TrendingUp, CheckCircle2, XCircle, Clock } from 'lucide-react'
 import { redirect } from 'next/navigation'
+import type { Database } from '@spotx/shared-config/types'
 
 export default async function MerchantDetailsPage({
   params,
@@ -28,6 +29,10 @@ export default async function MerchantDetailsPage({
     redirect('/admin')
   }
 
+  // Type assertion for merchant
+  type MerchantRow = Database['public']['Tables']['merchants']['Row']
+  const typedMerchant = merchant as MerchantRow
+
   // Get all campaigns for this merchant
   const { data: campaigns } = await supabase
     .from('campaigns')
@@ -45,8 +50,16 @@ export default async function MerchantDetailsPage({
     .eq('merchant_id', merchantId)
     .order('created_at', { ascending: false })
 
+  // Type assertion for campaigns with campaign_stats relation
+  type CampaignRow = Database['public']['Tables']['campaigns']['Row']
+  type CampaignStatsRow = Database['public']['Tables']['campaign_stats']['Row']
+  type CampaignWithStats = CampaignRow & {
+    campaign_stats: Pick<CampaignStatsRow, 'views_count' | 'completed_views_count' | 'rewards_paid' | 'total_watch_time' | 'unique_viewers' | 'date'>[]
+  }
+  const typedCampaigns = (campaigns || []) as CampaignWithStats[]
+
   // Get campaign IDs for this merchant
-  const campaignIds = campaigns?.map(c => c.id) || []
+  const campaignIds = typedCampaigns.map((c) => c.id)
 
   // Get direct views from ad_views table for more accurate statistics
   // Use admin client to bypass RLS
@@ -60,29 +73,34 @@ export default async function MerchantDetailsPage({
       .in('campaign_id_uuid', campaignIds)
 
     if (adViews) {
-      directViews.total = adViews.length
-      directViews.completed = adViews.filter(v => v.completed).length
-      directViews.totalRewards = adViews.reduce((sum, v) => sum + Number(v.reward_earned || 0), 0)
-      directViews.totalWatchTime = adViews.reduce((sum, v) => sum + (v.watched_duration || 0), 0)
-      directViews.uniqueUsers = new Set(adViews.map(v => v.user_id)).size
+      type AdViewRow = Database['public']['Tables']['ad_views']['Row']
+      const typedAdViews = adViews as Pick<AdViewRow, 'id' | 'campaign_id_uuid' | 'user_id' | 'completed' | 'reward_earned' | 'watched_duration'>[]
+      
+      directViews.total = typedAdViews.length
+      directViews.completed = typedAdViews.filter((v) => v.completed).length
+      directViews.totalRewards = typedAdViews.reduce((sum: number, v) => sum + Number(v.reward_earned || 0), 0)
+      directViews.totalWatchTime = typedAdViews.reduce((sum: number, v) => sum + (v.watched_duration || 0), 0)
+      directViews.uniqueUsers = new Set(typedAdViews.map((v) => v.user_id)).size
 
       // Group views by campaign
-      adViews.forEach(view => {
+      typedAdViews.forEach((view) => {
         const campaignId = view.campaign_id_uuid
-        if (!campaignViewsMap[campaignId]) {
+        if (campaignId && !campaignViewsMap[campaignId]) {
           campaignViewsMap[campaignId] = { views: 0, completed: 0 }
         }
-        campaignViewsMap[campaignId].views++
-        if (view.completed) {
-          campaignViewsMap[campaignId].completed++
+        if (campaignId) {
+          campaignViewsMap[campaignId].views++
+          if (view.completed) {
+            campaignViewsMap[campaignId].completed++
+          }
         }
       })
     }
   }
 
   // Calculate total statistics
-  const totalCampaigns = campaigns?.length || 0
-  const activeCampaigns = campaigns?.filter(c => c.status === 'active').length || 0
+  const totalCampaigns = typedCampaigns.length
+  const activeCampaigns = typedCampaigns.filter((c) => c.status === 'active').length
   
   // Aggregate campaign stats (use direct views as primary, fallback to campaign_stats)
   let totalViews = directViews.total
@@ -92,12 +110,12 @@ export default async function MerchantDetailsPage({
   let totalWatchTime = directViews.totalWatchTime
   let uniqueViewers = directViews.uniqueUsers
 
-  campaigns?.forEach(campaign => {
+  typedCampaigns.forEach((campaign) => {
     totalSpent += Number(campaign.spent_budget) || 0
     
     // Fallback to campaign_stats if direct views are 0
     if (totalViews === 0 && campaign.campaign_stats) {
-      campaign.campaign_stats.forEach((stat: any) => {
+      campaign.campaign_stats.forEach((stat) => {
         totalViews += stat.views_count || 0
         totalCompleted += stat.completed_views_count || 0
         totalRewardsPaid += Number(stat.rewards_paid) || 0
@@ -107,7 +125,7 @@ export default async function MerchantDetailsPage({
   })
 
   // Get total budget across all campaigns
-  const totalBudget = campaigns?.reduce((sum, c) => sum + Number(c.total_budget || 0), 0) || 0
+  const totalBudget = typedCampaigns.reduce((sum: number, c) => sum + Number(c.total_budget || 0), 0)
   const budgetUtilization = totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0
 
   // Calculate completion rate
@@ -144,48 +162,48 @@ export default async function MerchantDetailsPage({
           <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-4 sm:p-6 border border-slate-700">
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
               <div className="flex-1 min-w-0">
-                <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">{merchant.company_name}</h1>
-                <p className="text-sm sm:text-base text-gray-400 break-all">{merchant.business_email}</p>
-                {merchant.website && (
+                <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">{typedMerchant.company_name}</h1>
+                <p className="text-sm sm:text-base text-gray-400 break-all">{typedMerchant.business_email}</p>
+                {typedMerchant.website && (
                   <a
-                    href={merchant.website}
+                    href={typedMerchant.website}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-purple-400 hover:text-purple-300 text-xs sm:text-sm mt-1 inline-block break-all"
                   >
-                    {merchant.website}
+                    {typedMerchant.website}
                   </a>
                 )}
               </div>
               <span className={`px-3 py-1 rounded-lg text-xs sm:text-sm font-medium flex-shrink-0 ${
-                merchant.status === 'approved' 
+                typedMerchant.status === 'approved' 
                   ? 'bg-green-500/20 text-green-400' 
-                  : merchant.status === 'pending'
+                  : typedMerchant.status === 'pending'
                   ? 'bg-yellow-500/20 text-yellow-400'
                   : 'bg-red-500/20 text-red-400'
               }`}>
-                {merchant.status === 'approved' ? 'Genehmigt' : 
-                 merchant.status === 'pending' ? 'Ausstehend' : 'Gesperrt'}
+                {typedMerchant.status === 'approved' ? 'Genehmigt' : 
+                 typedMerchant.status === 'pending' ? 'Ausstehend' : 'Gesperrt'}
               </span>
             </div>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mt-4">
               <div>
                 <span className="text-gray-400 text-xs sm:text-sm">Telefon</span>
-                <p className="text-white text-sm sm:text-base">{merchant.phone || '-'}</p>
+                <p className="text-white text-sm sm:text-base">{typedMerchant.phone || '-'}</p>
               </div>
               <div>
                 <span className="text-gray-400 text-xs sm:text-sm">Registriert am</span>
-                <p className="text-white text-sm sm:text-base">{formatDate(merchant.created_at)}</p>
+                <p className="text-white text-sm sm:text-base">{formatDate(typedMerchant.created_at)}</p>
               </div>
               <div>
                 <span className="text-gray-400 text-xs sm:text-sm">Verifiziert</span>
-                <p className="text-white text-sm sm:text-base">{merchant.verified ? 'Ja' : 'Nein'}</p>
+                <p className="text-white text-sm sm:text-base">{typedMerchant.verified ? 'Ja' : 'Nein'}</p>
               </div>
-              {merchant.vat_id && (
+              {typedMerchant.vat_id && (
                 <div>
                   <span className="text-gray-400 text-xs sm:text-sm">USt-IdNr.</span>
-                  <p className="text-white text-sm sm:text-base break-all">{merchant.vat_id}</p>
+                  <p className="text-white text-sm sm:text-base break-all">{typedMerchant.vat_id}</p>
                 </div>
               )}
             </div>
@@ -261,15 +279,15 @@ export default async function MerchantDetailsPage({
             <h2 className="text-xl sm:text-2xl font-bold text-white">Kampagnen ({totalCampaigns})</h2>
           </div>
 
-          {campaigns && campaigns.length > 0 ? (
+          {typedCampaigns.length > 0 ? (
             <>
               {/* Mobile Card View */}
               <div className="block lg:hidden divide-y divide-slate-700">
-                {campaigns.map((campaign) => {
+                {typedCampaigns.map((campaign) => {
                   const directCampaignViews = campaignViewsMap[campaign.id] || { views: 0, completed: 0 }
                   const campaignStats = campaign.campaign_stats || []
-                  const statsViews = campaignStats.reduce((sum: number, stat: any) => sum + (stat.views_count || 0), 0)
-                  const statsCompleted = campaignStats.reduce((sum: number, stat: any) => sum + (stat.completed_views_count || 0), 0)
+                  const statsViews = campaignStats.reduce((sum: number, stat) => sum + (stat.views_count || 0), 0)
+                  const statsCompleted = campaignStats.reduce((sum: number, stat) => sum + (stat.completed_views_count || 0), 0)
                   
                   const campaignViews = directCampaignViews.views || statsViews
                   const campaignCompleted = directCampaignViews.completed || statsCompleted
@@ -359,11 +377,11 @@ export default async function MerchantDetailsPage({
                     </tr>
                   </thead>
                   <tbody>
-                    {campaigns.map((campaign) => {
+                    {typedCampaigns.map((campaign) => {
                       const directCampaignViews = campaignViewsMap[campaign.id] || { views: 0, completed: 0 }
                       const campaignStats = campaign.campaign_stats || []
-                      const statsViews = campaignStats.reduce((sum: number, stat: any) => sum + (stat.views_count || 0), 0)
-                      const statsCompleted = campaignStats.reduce((sum: number, stat: any) => sum + (stat.completed_views_count || 0), 0)
+                      const statsViews = campaignStats.reduce((sum: number, stat) => sum + (stat.views_count || 0), 0)
+                      const statsCompleted = campaignStats.reduce((sum: number, stat) => sum + (stat.completed_views_count || 0), 0)
                       
                       const campaignViews = directCampaignViews.views || statsViews
                       const campaignCompleted = directCampaignViews.completed || statsCompleted

@@ -19,7 +19,8 @@
       }
     ],
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "@spotx/shared-config/*": ["../../packages/shared-config/src/*"]
     }
   },
   "include": [

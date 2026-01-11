@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase/server'
 import { requireAdmin } from '@/lib/auth/admin-helpers'
+import type { Database as DatabaseType } from '@spotx/shared-config/types'
 
 /**
  * GET /api/admin/users/[id]
@@ -56,7 +57,8 @@ export async function PUT(
     const userId = resolvedParams.id
 
     const body = await request.json()
-    const updateData: any = {
+    type UserUpdate = DatabaseType['public']['Tables']['users']['Update']
+    const updateData: UserUpdate = {
       updated_at: new Date().toISOString(),
     }
 

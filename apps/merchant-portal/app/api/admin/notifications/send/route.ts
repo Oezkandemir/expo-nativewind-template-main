@@ -182,7 +182,7 @@ export async function POST(request: Request) {
         console.log(`Sending chunk ${i + 1}/${chunks.length} with ${chunk.length} messages`)
         const tickets = await expo.sendPushNotificationsAsync(chunk)
         
-        tickets.forEach((ticket, index) => {
+        tickets.forEach((ticket: { status: 'ok' | 'error'; message?: string; details?: any }, index: number) => {
           if (ticket.status === 'ok') {
             sentCount++
           } else if (ticket.status === 'error') {

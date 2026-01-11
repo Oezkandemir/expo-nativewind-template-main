@@ -3,6 +3,7 @@ import { createServiceRoleClient } from '@/lib/supabase/server'
 import { requireAdmin } from '@/lib/auth/admin-helpers'
 import Link from 'next/link'
 import { ArrowLeft, Database, Users, BarChart, Euro, Activity, TrendingUp, AlertCircle, CheckCircle } from 'lucide-react'
+import type { Database as DatabaseType } from '@spotx/shared-config/types'
 
 export default async function SystemDashboardPage() {
   await requireAdmin()
@@ -24,30 +25,43 @@ export default async function SystemDashboardPage() {
     adminSupabase.from('rewards').select('id, user_id, amount, created_at'),
   ])
   
+  // Type assertions
+  type UserRow = DatabaseType['public']['Tables']['users']['Row']
+  type MerchantRow = DatabaseType['public']['Tables']['merchants']['Row']
+  type CampaignRow = DatabaseType['public']['Tables']['campaigns']['Row']
+  type AdViewRow = DatabaseType['public']['Tables']['ad_views']['Row']
+  type RewardRow = DatabaseType['public']['Tables']['rewards']['Row']
+  
+  const typedUsers = (users || []) as Pick<UserRow, 'id' | 'created_at'>[]
+  const typedMerchants = (merchants || []) as Pick<MerchantRow, 'id' | 'status' | 'created_at'>[]
+  const typedCampaigns = (campaigns || []) as Pick<CampaignRow, 'id' | 'status' | 'total_budget' | 'spent_budget' | 'created_at'>[]
+  const typedAdViews = (adViews || []) as Pick<AdViewRow, 'id' | 'user_id' | 'campaign_id' | 'completed' | 'reward_earned' | 'viewed_at' | 'created_at'>[]
+  const typedRewards = (rewards || []) as Pick<RewardRow, 'id' | 'user_id' | 'amount' | 'created_at'>[]
+  
   // Calculate statistics
-  const totalUsers = users?.length || 0
-  const totalMerchants = merchants?.length || 0
-  const approvedMerchants = merchants?.filter(m => m.status === 'approved').length || 0
-  const pendingMerchants = merchants?.filter(m => m.status === 'pending').length || 0
+  const totalUsers = typedUsers.length
+  const totalMerchants = typedMerchants.length
+  const approvedMerchants = typedMerchants.filter(m => m.status === 'approved').length
+  const pendingMerchants = typedMerchants.filter(m => m.status === 'pending').length
   
-  const totalCampaigns = campaigns?.length || 0
-  const activeCampaigns = campaigns?.filter(c => c.status === 'active').length || 0
-  const totalBudget = campaigns?.reduce((sum, c) => sum + (Number(c.total_budget) || 0), 0) || 0
-  const spentBudget = campaigns?.reduce((sum, c) => sum + (Number(c.spent_budget) || 0), 0) || 0
+  const totalCampaigns = typedCampaigns.length
+  const activeCampaigns = typedCampaigns.filter(c => c.status === 'active').length
+  const totalBudget = typedCampaigns.reduce((sum, c) => sum + (Number(c.total_budget) || 0), 0)
+  const spentBudget = typedCampaigns.reduce((sum, c) => sum + (Number(c.spent_budget) || 0), 0)
   
-  const totalViews = adViews?.length || 0
-  const completedViews = adViews?.filter(v => v.completed).length || 0
-  const uniqueUsers = new Set(adViews?.map(v => v.user_id).filter(Boolean)).size
-  const uniqueCampaigns = new Set(adViews?.map(v => v.campaign_id).filter(Boolean)).size
+  const totalViews = typedAdViews.length
+  const completedViews = typedAdViews.filter(v => v.completed).length
+  const uniqueUsers = new Set(typedAdViews.map(v => v.user_id).filter(Boolean)).size
+  const uniqueCampaigns = new Set(typedAdViews.map(v => v.campaign_id).filter(Boolean)).size
   
-  const totalRewards = rewards?.reduce((sum, r) => sum + (Number(r.amount) || 0), 0) || 0
-  const totalRewardTransactions = rewards?.length || 0
+  const totalRewards = typedRewards.reduce((sum, r) => sum + (Number(r.amount) || 0), 0)
+  const totalRewardTransactions = typedRewards.length
   
   // Calculate online users (active in last 15 minutes)
   const now = new Date()
   const onlineThreshold = new Date(now.getTime() - 15 * 60 * 1000)
   const onlineUsers = new Set(
-    adViews?.filter(v => {
+    typedAdViews.filter(v => {
       const viewDate = v.viewed_at ? new Date(v.viewed_at) : new Date(v.created_at)
       return viewDate >= onlineThreshold && v.user_id
     }).map(v => v.user_id)
@@ -57,21 +71,21 @@ export default async function SystemDashboardPage() {
   const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
   const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000)
   
-  const recentUsers = users?.filter(u => new Date(u.created_at) >= sevenDaysAgo).length || 0
-  const previousUsers = users?.filter(u => {
+  const recentUsers = typedUsers.filter(u => new Date(u.created_at) >= sevenDaysAgo).length
+  const previousUsers = typedUsers.filter(u => {
     const created = new Date(u.created_at)
     return created >= fourteenDaysAgo && created < sevenDaysAgo
-  }).length || 0
+  }).length
   
-  const recentViews = adViews?.filter(v => {
+  const recentViews = typedAdViews.filter(v => {
     const viewDate = v.viewed_at ? new Date(v.viewed_at) : new Date(v.created_at)
     return viewDate >= sevenDaysAgo
-  }).length || 0
+  }).length
   
-  const previousViews = adViews?.filter(v => {
+  const previousViews = typedAdViews.filter(v => {
     const viewDate = v.viewed_at ? new Date(v.viewed_at) : new Date(v.created_at)
     return viewDate >= fourteenDaysAgo && viewDate < sevenDaysAgo
-  }).length || 0
+  }).length
   
   const userGrowth = previousUsers > 0
     ? ((recentUsers - previousUsers) / previousUsers * 100).toFixed(1)

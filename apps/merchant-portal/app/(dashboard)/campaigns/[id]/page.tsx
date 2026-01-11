@@ -57,15 +57,18 @@ export default async function CampaignDetailPage({
     )
   }
 
+  // Type assertion for campaign with relations
+  const campaignData = campaign as any
+
   // Calculate statistics
-  const stats = campaign.campaign_stats || []
+  const stats = campaignData.campaign_stats || []
   const totalViews = stats.reduce((sum: number, stat: any) => sum + (stat.views_count || 0), 0)
   const totalCompleted = stats.reduce((sum: number, stat: any) => sum + (stat.completed_views_count || 0), 0)
   const totalRewardsPaid = stats.reduce((sum: number, stat: any) => sum + Number(stat.rewards_paid || 0), 0)
   const totalWatchTime = stats.reduce((sum: number, stat: any) => sum + (stat.total_watch_time || 0), 0)
   const uniqueViewers = stats.reduce((max: number, stat: any) => Math.max(max, stat.unique_viewers || 0), 0)
 
-  const budgetPercent = (Number(campaign.spent_budget) / Number(campaign.total_budget)) * 100
+  const budgetPercent = (Number(campaignData.spent_budget) / Number(campaignData.total_budget)) * 100
   const completionRate = totalViews > 0 ? (totalCompleted / totalViews) * 100 : 0
 
   const formatDate = (dateString: string | null) => {
@@ -90,7 +93,7 @@ export default async function CampaignDetailPage({
             Zurück zu Kampagnen
           </Link>
           <Link
-            href={`/campaigns/${campaign.id}/edit`}
+            href={`/campaigns/${campaignData.id}/edit`}
             className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
           >
             <Edit className="w-4 h-4" />
@@ -104,25 +107,25 @@ export default async function CampaignDetailPage({
         <div className="mb-8">
           <div className="flex items-start justify-between mb-4">
             <div>
-              <h1 className="text-3xl font-bold text-white mb-2">{campaign.name}</h1>
-              <p className="text-xl text-gray-400">{campaign.title}</p>
+              <h1 className="text-3xl font-bold text-white mb-2">{campaignData.name}</h1>
+              <p className="text-xl text-gray-400">{campaignData.title}</p>
             </div>
             <span className={`px-3 py-1 rounded-lg text-sm font-medium ${
-              campaign.status === 'active' ? 'bg-green-500/20 text-green-400' :
-              campaign.status === 'draft' ? 'bg-gray-500/20 text-gray-400' :
-              campaign.status === 'paused' ? 'bg-yellow-500/20 text-yellow-400' :
-              campaign.status === 'completed' ? 'bg-blue-500/20 text-blue-400' :
+              campaignData.status === 'active' ? 'bg-green-500/20 text-green-400' :
+              campaignData.status === 'draft' ? 'bg-gray-500/20 text-gray-400' :
+              campaignData.status === 'paused' ? 'bg-yellow-500/20 text-yellow-400' :
+              campaignData.status === 'completed' ? 'bg-blue-500/20 text-blue-400' :
               'bg-red-500/20 text-red-400'
             }`}>
-              {campaign.status === 'active' ? 'Aktiv' :
-               campaign.status === 'draft' ? 'Entwurf' :
-               campaign.status === 'paused' ? 'Pausiert' :
-               campaign.status === 'completed' ? 'Abgeschlossen' :
+              {campaignData.status === 'active' ? 'Aktiv' :
+               campaignData.status === 'draft' ? 'Entwurf' :
+               campaignData.status === 'paused' ? 'Pausiert' :
+               campaignData.status === 'completed' ? 'Abgeschlossen' :
                'Abgebrochen'}
             </span>
           </div>
-          {campaign.description && (
-            <p className="text-gray-300 mt-4">{campaign.description}</p>
+          {campaignData.description && (
+            <p className="text-gray-300 mt-4">{campaignData.description}</p>
           )}
         </div>
 
@@ -158,8 +161,8 @@ export default async function CampaignDetailPage({
               <Euro className="w-5 h-5 text-yellow-400" />
               <h3 className="text-sm font-medium text-gray-400">Ausgegeben</h3>
             </div>
-            <p className="text-2xl font-bold text-white">€{Number(campaign.spent_budget).toFixed(2)}</p>
-            <p className="text-xs text-gray-400 mt-1">von €{Number(campaign.total_budget).toFixed(2)}</p>
+            <p className="text-2xl font-bold text-white">€{Number(campaignData.spent_budget).toFixed(2)}</p>
+            <p className="text-xs text-gray-400 mt-1">von €{Number(campaignData.total_budget).toFixed(2)}</p>
           </div>
         </div>
 
@@ -170,7 +173,7 @@ export default async function CampaignDetailPage({
             <div className="flex justify-between text-sm">
               <span className="text-gray-400">Ausgegeben</span>
               <span className="text-white font-semibold">
-                €{Number(campaign.spent_budget).toFixed(2)} / €{Number(campaign.total_budget).toFixed(2)}
+                €{Number(campaignData.spent_budget).toFixed(2)} / €{Number(campaignData.total_budget).toFixed(2)}
               </span>
             </div>
             <div className="h-4 bg-slate-700 rounded-full overflow-hidden">
@@ -193,25 +196,25 @@ export default async function CampaignDetailPage({
             <div className="space-y-3">
               <div className="flex justify-between">
                 <span className="text-gray-400">Inhaltstyp</span>
-                <span className="text-white capitalize">{campaign.content_type}</span>
+                <span className="text-white capitalize">{campaignData.content_type}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">Dauer</span>
-                <span className="text-white">{campaign.duration_seconds} Sekunden</span>
+                <span className="text-white">{campaignData.duration_seconds} Sekunden</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">Kosten pro View</span>
-                <span className="text-white">€{Number(campaign.reward_per_view).toFixed(2)}</span>
+                <span className="text-white">€{Number(campaignData.reward_per_view).toFixed(2)}</span>
               </div>
               <div>
                 <span className="text-gray-400 block mb-1">Content URL</span>
                 <a
-                  href={campaign.content_url}
+                  href={campaignData.content_url}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-purple-400 hover:text-purple-300 break-all"
                 >
-                  {campaign.content_url}
+                  {campaignData.content_url}
                 </a>
               </div>
             </div>
@@ -221,11 +224,11 @@ export default async function CampaignDetailPage({
           <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-6 border border-slate-700">
             <h2 className="text-xl font-semibold text-white mb-4">Zielgruppen-Targeting</h2>
             <div className="space-y-3">
-              {campaign.target_interests && campaign.target_interests.length > 0 ? (
+              {campaignData.target_interests && campaignData.target_interests.length > 0 ? (
                 <div>
                   <span className="text-gray-400 block mb-2">Interessen</span>
                   <div className="flex flex-wrap gap-2">
-                    {campaign.target_interests.map((interest: string) => (
+                    {campaignData.target_interests.map((interest: string) => (
                       <span
                         key={interest}
                         className="px-2 py-1 bg-purple-500/20 text-purple-300 rounded text-sm"
@@ -244,19 +247,19 @@ export default async function CampaignDetailPage({
               <div className="flex justify-between">
                 <span className="text-gray-400">Alter</span>
                 <span className="text-white">
-                  {campaign.target_age_min && campaign.target_age_max
-                    ? `${campaign.target_age_min} - ${campaign.target_age_max} Jahre`
-                    : campaign.target_age_min
-                    ? `Ab ${campaign.target_age_min} Jahren`
-                    : campaign.target_age_max
-                    ? `Bis ${campaign.target_age_max} Jahre`
+                  {campaignData.target_age_min && campaignData.target_age_max
+                    ? `${campaignData.target_age_min} - ${campaignData.target_age_max} Jahre`
+                    : campaignData.target_age_min
+                    ? `Ab ${campaignData.target_age_min} Jahren`
+                    : campaignData.target_age_max
+                    ? `Bis ${campaignData.target_age_max} Jahre`
                     : 'Alle Altersgruppen'}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">Geschlecht</span>
                 <span className="text-white capitalize">
-                  {campaign.target_gender || 'Alle'}
+                  {campaignData.target_gender || 'Alle'}
                 </span>
               </div>
             </div>
@@ -271,14 +274,14 @@ export default async function CampaignDetailPage({
               <Calendar className="w-5 h-5 text-gray-400" />
               <div>
                 <span className="text-gray-400 block text-sm">Startdatum</span>
-                <span className="text-white">{formatDate(campaign.start_date)}</span>
+                <span className="text-white">{formatDate(campaignData.start_date)}</span>
               </div>
             </div>
             <div className="flex items-center gap-3">
               <Calendar className="w-5 h-5 text-gray-400" />
               <div>
                 <span className="text-gray-400 block text-sm">Enddatum</span>
-                <span className="text-white">{formatDate(campaign.end_date)}</span>
+                <span className="text-white">{formatDate(campaignData.end_date)}</span>
               </div>
             </div>
           </div>

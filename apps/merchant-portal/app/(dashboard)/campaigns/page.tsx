@@ -120,7 +120,7 @@ export default async function CampaignsPage() {
         {/* Campaigns Grid */}
         {campaigns && campaigns.length > 0 ? (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {campaigns.map((campaign) => {
+            {campaigns.map((campaign: any) => {
               const stats = campaign.campaign_stats?.[0] || {
                 views_count: 0,
                 completed_views_count: 0,

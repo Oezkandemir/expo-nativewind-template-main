@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase/server'
+import type { Database as DatabaseType } from '@spotx/shared-config/types'
 
 /**
  * API Route to create a merchant profile
@@ -69,7 +70,8 @@ export async function POST(request: Request) {
     }
 
     // Build merchant data
-    const merchantData: any = {
+    type MerchantInsert = DatabaseType['public']['Tables']['merchants']['Insert']
+    const merchantData: MerchantInsert = {
       company_name: companyName,
       business_email: email,
       phone: phone || null,
@@ -78,12 +80,13 @@ export async function POST(request: Request) {
     }
 
     // Try with auth_user_id first (if column exists)
+    // Note: auth_user_id might not be in the type definition, so we use type assertion
     let result = await supabase
       .from('merchants')
       .insert({
         ...merchantData,
         auth_user_id: authUserId,
-      })
+      } as MerchantInsert & { auth_user_id?: string })
       .select()
 
     // If that fails (e.g., auth_user_id column doesn't exist), try without it

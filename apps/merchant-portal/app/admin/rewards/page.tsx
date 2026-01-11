@@ -3,6 +3,7 @@ import { createServiceRoleClient } from '@/lib/supabase/server'
 import { requireAdmin } from '@/lib/auth/admin-helpers'
 import Link from 'next/link'
 import { ArrowLeft, Euro, TrendingUp, Users, Calendar, Filter } from 'lucide-react'
+import type { Database as DatabaseType } from '@spotx/shared-config/types'
 
 export default async function AdminRewardsPage({
   searchParams,
@@ -42,14 +43,22 @@ export default async function AdminRewardsPage({
   
   const { data: rewards } = await query.limit(500)
   
+  // Type assertion for rewards with users relation
+  type RewardRow = DatabaseType['public']['Tables']['rewards']['Row']
+  type UserRow = DatabaseType['public']['Tables']['users']['Row']
+  type RewardWithUser = RewardRow & {
+    users: Pick<UserRow, 'id' | 'email' | 'name'>
+  }
+  const typedRewards = (rewards || []) as RewardWithUser[]
+  
   // Calculate statistics
-  const totalRewards = rewards?.reduce((sum, r) => sum + (Number(r.amount) || 0), 0) || 0
-  const totalTransactions = rewards?.length || 0
-  const uniqueUsers = new Set(rewards?.map(r => r.user_id).filter(Boolean)).size
+  const totalRewards = typedRewards.reduce((sum, r) => sum + (Number(r.amount) || 0), 0)
+  const totalTransactions = typedRewards.length
+  const uniqueUsers = new Set(typedRewards.map(r => r.user_id).filter(Boolean)).size
   
   // Group by type
   const rewardsByType = new Map<string, number>()
-  rewards?.forEach((r) => {
+  typedRewards.forEach((r) => {
     const type = r.type || 'unknown'
     const current = rewardsByType.get(type) || 0
     rewardsByType.set(type, current + Number(r.amount || 0))
@@ -60,11 +69,11 @@ export default async function AdminRewardsPage({
   const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
   
-  const last7Days = rewards?.filter(r => new Date(r.created_at) >= sevenDaysAgo)
-    .reduce((sum, r) => sum + (Number(r.amount) || 0), 0) || 0
+  const last7Days = typedRewards.filter(r => new Date(r.created_at) >= sevenDaysAgo)
+    .reduce((sum, r) => sum + (Number(r.amount) || 0), 0)
   
-  const last30Days = rewards?.filter(r => new Date(r.created_at) >= thirtyDaysAgo)
-    .reduce((sum, r) => sum + (Number(r.amount) || 0), 0) || 0
+  const last30Days = typedRewards.filter(r => new Date(r.created_at) >= thirtyDaysAgo)
+    .reduce((sum, r) => sum + (Number(r.amount) || 0), 0)
   
   const formatDate = (date: string) => {
     return new Date(date).toLocaleDateString('de-DE', {
@@ -157,11 +166,11 @@ export default async function AdminRewardsPage({
         <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700 overflow-hidden">
           <div className="p-4 sm:p-6 border-b border-slate-700">
             <h2 className="text-xl sm:text-2xl font-bold text-white">
-              Alle Rewards ({rewards?.length || 0})
+              Alle Rewards ({typedRewards.length})
             </h2>
           </div>
 
-          {!rewards || rewards.length === 0 ? (
+          {typedRewards.length === 0 ? (
             <div className="p-12 text-center text-gray-400">
               Keine Rewards gefunden
             </div>
@@ -169,8 +178,8 @@ export default async function AdminRewardsPage({
             <>
               {/* Mobile & Tablet Card View */}
               <div className="block xl:hidden divide-y divide-slate-700">
-                {rewards.map((reward) => {
-                  const user = reward.users as any
+                {typedRewards.map((reward) => {
+                  const user = reward.users
                   return (
                     <div key={reward.id} className="p-3 sm:p-4">
                       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-2">
@@ -214,8 +223,8 @@ export default async function AdminRewardsPage({
                     </tr>
                   </thead>
                   <tbody>
-                    {rewards.map((reward) => {
-                      const user = reward.users as any
+                    {typedRewards.map((reward) => {
+                      const user = reward.users
                       return (
                         <tr
                           key={reward.id}

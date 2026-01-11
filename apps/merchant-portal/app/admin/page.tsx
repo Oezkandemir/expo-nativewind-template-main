@@ -3,19 +3,39 @@ import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import { CheckCircle2, XCircle, Clock, LogOut, BarChart, Activity, Users, Euro, Database, Settings, Bell } from 'lucide-react'
 import MerchantActions from './components/MerchantActions'
+import type { Database as DatabaseType } from '@spotx/shared-config/types'
 
 export default async function AdminDashboard() {
   const merchants = await getAllMerchants()
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
+  // Type assertion for merchants
+  type MerchantRow = DatabaseType['public']['Tables']['merchants']['Row']
+  type MerchantStatus = 'pending' | 'approved' | 'suspended'
+  
+  const typedMerchants = ((merchants || []) as MerchantRow[]).map((m) => ({
+    id: m.id,
+    user_id: m.user_id,
+    company_name: m.company_name,
+    business_email: m.business_email,
+    phone: m.phone,
+    website: m.website,
+    vat_id: m.vat_id,
+    business_address: m.business_address,
+    status: (m.status as MerchantStatus) || ('pending' as MerchantStatus),
+    verified: m.verified,
+    created_at: m.created_at,
+    updated_at: m.updated_at,
+  })) as (MerchantRow & { status: MerchantStatus })[]
+
   // Get statistics
-  const pendingCount = merchants.filter(m => m.status === 'pending').length
-  const approvedCount = merchants.filter(m => m.status === 'approved').length
-  const suspendedCount = merchants.filter(m => m.status === 'suspended').length
+  const pendingCount = typedMerchants.filter(m => m.status === 'pending').length
+  const approvedCount = typedMerchants.filter(m => m.status === 'approved').length
+  const suspendedCount = typedMerchants.filter(m => m.status === 'suspended').length
   
   // Sort merchants: newest first (pending at top for attention)
-  const sortedMerchants = [...merchants].sort((a, b) => {
+  const sortedMerchants = [...typedMerchants].sort((a, b) => {
     // Pending merchants first
     if (a.status === 'pending' && b.status !== 'pending') return -1
     if (a.status !== 'pending' && b.status === 'pending') return 1
@@ -159,7 +179,7 @@ export default async function AdminDashboard() {
               <div>
                 <h2 className="text-xl sm:text-2xl font-bold text-white">Alle Merchants</h2>
                 <p className="text-gray-400 text-xs sm:text-sm mt-1">
-                  Gesamt: {merchants.length} Merchants
+                  Gesamt: {typedMerchants.length} Merchants
                   {pendingCount > 0 && (
                     <span className="ml-2 text-yellow-400 font-semibold">
                       • {pendingCount} neue Registrierung{pendingCount > 1 ? 'en' : ''} ausstehend
@@ -241,7 +261,12 @@ export default async function AdminDashboard() {
                     </div>
                     
                     <div className="mt-3 pt-3 border-t border-slate-700">
-                      <MerchantActions merchant={merchant} />
+                      <MerchantActions merchant={{
+                        id: merchant.id,
+                        company_name: merchant.company_name,
+                        business_email: merchant.business_email,
+                        status: merchant.status
+                      }} />
                     </div>
                   </div>
                 ))}
@@ -322,7 +347,12 @@ export default async function AdminDashboard() {
                         {new Date(merchant.created_at).toLocaleDateString('de-DE')}
                       </td>
                       <td className="px-4 lg:px-6 py-4">
-                        <MerchantActions merchant={merchant} />
+                        <MerchantActions merchant={{
+                          id: merchant.id,
+                          company_name: merchant.company_name,
+                          business_email: merchant.business_email,
+                          status: merchant.status
+                        }} />
                       </td>
                     </tr>
                   ))

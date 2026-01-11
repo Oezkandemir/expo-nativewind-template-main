@@ -3,6 +3,7 @@ import { createServiceRoleClient } from '@/lib/supabase/server'
 import { requireAdmin } from '@/lib/auth/admin-helpers'
 import Link from 'next/link'
 import { ArrowLeft, User, Eye, Calendar, Euro, BarChart, Activity, Mail, Clock } from 'lucide-react'
+import type { Database as DatabaseType } from '@spotx/shared-config/types'
 
 export default async function UserDetailsPage({
   params,
@@ -37,6 +38,10 @@ export default async function UserDetailsPage({
     )
   }
   
+  // Type assertion for user
+  type UserRow = DatabaseType['public']['Tables']['users']['Row']
+  const typedUser = user as UserRow
+  
   // Get user's ad views
   const { data: adViews } = await adminSupabase
     .from('ad_views')
@@ -53,14 +58,26 @@ export default async function UserDetailsPage({
     .order('created_at', { ascending: false })
     .limit(50)
   
-  // Calculate statistics
-  const totalViews = adViews?.length || 0
-  const completedViews = adViews?.filter(v => v.completed).length || 0
-  const totalRewards = rewards?.reduce((sum, r) => sum + (Number(r.amount) || 0), 0) || 0
-  const campaignsSeen = new Set(adViews?.map(v => v.campaign_id).filter(Boolean)).size
+  // Type assertions
+  type AdViewRow = DatabaseType['public']['Tables']['ad_views']['Row']
+  type CampaignRow = DatabaseType['public']['Tables']['campaigns']['Row']
+  type RewardRow = DatabaseType['public']['Tables']['rewards']['Row']
   
-  const lastActivity = adViews && adViews.length > 0
-    ? (adViews[0].viewed_at ? new Date(adViews[0].viewed_at) : new Date(adViews[0].created_at))
+  type AdViewWithCampaign = AdViewRow & {
+    campaigns: Pick<CampaignRow, 'name' | 'title'> | null
+  }
+  
+  const typedAdViews = (adViews || []) as AdViewWithCampaign[]
+  const typedRewards = (rewards || []) as RewardRow[]
+  
+  // Calculate statistics
+  const totalViews = typedAdViews.length
+  const completedViews = typedAdViews.filter(v => v.completed).length
+  const totalRewards = typedRewards.reduce((sum, r) => sum + (Number(r.amount) || 0), 0)
+  const campaignsSeen = new Set(typedAdViews.map(v => v.campaign_id).filter(Boolean)).size
+  
+  const lastActivity = typedAdViews.length > 0
+    ? (typedAdViews[0].viewed_at ? new Date(typedAdViews[0].viewed_at) : new Date(typedAdViews[0].created_at))
     : null
   
   const isOnline = lastActivity
@@ -93,7 +110,7 @@ export default async function UserDetailsPage({
           </Link>
           <div>
             <h1 className="text-xl sm:text-2xl font-bold text-white">User-Details</h1>
-            <p className="text-xs sm:text-sm text-gray-400 mt-1">{user.email}</p>
+            <p className="text-xs sm:text-sm text-gray-400 mt-1">{typedUser.email}</p>
           </div>
         </div>
       </header>
@@ -109,11 +126,11 @@ export default async function UserDetailsPage({
                 </div>
                 <div>
                   <h2 className="text-xl sm:text-2xl font-bold text-white">
-                    {user.name || 'Kein Name'}
+                    {typedUser.name || 'Kein Name'}
                   </h2>
                   <div className="flex items-center gap-2 mt-1">
                     <Mail className="w-4 h-4 text-gray-400" />
-                    <span className="text-gray-400 text-sm">{user.email}</span>
+                    <span className="text-gray-400 text-sm">{typedUser.email}</span>
                   </div>
                 </div>
                 {isOnline && (
@@ -127,7 +144,7 @@ export default async function UserDetailsPage({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                 <div>
                   <span className="text-gray-400">Registriert:</span>
-                  <p className="text-white font-semibold">{formatDate(user.created_at)}</p>
+                  <p className="text-white font-semibold">{formatDate(typedUser.created_at)}</p>
                 </div>
                 <div>
                   <span className="text-gray-400">Letzte Aktivität:</span>
@@ -136,20 +153,20 @@ export default async function UserDetailsPage({
                 <div>
                   <span className="text-gray-400">Onboarding:</span>
                   <p className="text-white font-semibold">
-                    {user.onboarding_complete ? 'Abgeschlossen' : 'Ausstehend'}
+                    {typedUser.onboarding_complete ? 'Abgeschlossen' : 'Ausstehend'}
                   </p>
                 </div>
                 <div>
                   <span className="text-gray-400">Benachrichtigungen:</span>
                   <p className="text-white font-semibold">
-                    {user.notifications_enabled ? 'Aktiviert' : 'Deaktiviert'}
+                    {typedUser.notifications_enabled ? 'Aktiviert' : 'Deaktiviert'}
                   </p>
                 </div>
-                {user.interests && user.interests.length > 0 && (
+                {typedUser.interests && typedUser.interests.length > 0 && (
                   <div className="sm:col-span-2">
                     <span className="text-gray-400">Interessen:</span>
                     <div className="flex flex-wrap gap-2 mt-1">
-                      {user.interests.map((interest, idx) => (
+                      {typedUser.interests.map((interest: string, idx: number) => (
                         <span
                           key={idx}
                           className="px-2 py-1 bg-purple-500/20 text-purple-300 rounded text-xs"
@@ -191,7 +208,7 @@ export default async function UserDetailsPage({
               <h3 className="text-xs sm:text-sm font-medium text-gray-400">Gesamt Rewards</h3>
             </div>
             <p className="text-xl sm:text-2xl font-bold text-white">€{totalRewards.toFixed(2)}</p>
-            <p className="text-xs text-gray-400 mt-1">{rewards?.length || 0} Transaktionen</p>
+            <p className="text-xs text-gray-400 mt-1">{typedRewards.length} Transaktionen</p>
           </div>
 
           <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-4 sm:p-6 border border-slate-700">
@@ -214,13 +231,13 @@ export default async function UserDetailsPage({
             <h2 className="text-xl sm:text-2xl font-bold text-white">Letzte Ad-Views</h2>
           </div>
           <div className="divide-y divide-slate-700">
-            {adViews && adViews.length > 0 ? (
-              adViews.slice(0, 10).map((view) => (
+            {typedAdViews.length > 0 ? (
+              typedAdViews.slice(0, 10).map((view) => (
                 <div key={view.id} className="p-4 hover:bg-slate-800/30 transition-colors">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                     <div className="flex-1">
                       <div className="font-semibold text-white">
-                        {(view.campaigns as any)?.name || view.campaign_id || 'Unbekannte Kampagne'}
+                        {view.campaigns?.name || view.campaign_id || 'Unbekannte Kampagne'}
                       </div>
                       <div className="text-xs text-gray-400 mt-1">
                         {formatDate(view.viewed_at || view.created_at)}
@@ -255,8 +272,8 @@ export default async function UserDetailsPage({
             <h2 className="text-xl sm:text-2xl font-bold text-white">Letzte Rewards</h2>
           </div>
           <div className="divide-y divide-slate-700">
-            {rewards && rewards.length > 0 ? (
-              rewards.slice(0, 10).map((reward) => (
+            {typedRewards.length > 0 ? (
+              typedRewards.slice(0, 10).map((reward) => (
                 <div key={reward.id} className="p-4 hover:bg-slate-800/30 transition-colors">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                     <div className="flex-1">

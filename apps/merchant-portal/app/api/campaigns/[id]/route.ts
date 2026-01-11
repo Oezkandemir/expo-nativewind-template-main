@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient, createServiceRoleClient } from '@/lib/supabase/server'
 import { getCurrentMerchant } from '@/lib/auth/merchant-helpers'
+import type { Database as DatabaseType } from '@spotx/shared-config/types'
 
 /**
  * GET /api/campaigns/[id]
@@ -167,7 +168,8 @@ export async function PUT(
     }
 
     // Prepare update data (don't update spent_budget or merchant_id)
-    const updateData = {
+    type CampaignUpdate = DatabaseType['public']['Tables']['campaigns']['Update']
+    const updateData: CampaignUpdate = {
       name,
       title,
       description: description || null,

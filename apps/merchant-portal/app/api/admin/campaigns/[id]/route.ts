@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase/server'
 import { requireAdmin } from '@/lib/auth/admin-helpers'
+import type { Database } from '@spotx/shared-config/types'
 
 /**
  * GET /api/admin/campaigns/[id]
@@ -83,7 +84,11 @@ export async function PUT(
       .eq('id', campaignId)
       .single()
 
-    const currentSpent = Number(existingCampaign?.spent_budget) || 0
+    // Type assertion
+    type CampaignRow = Database['public']['Tables']['campaigns']['Row']
+    const typedExistingCampaign = existingCampaign as Pick<CampaignRow, 'spent_budget'> | null
+
+    const currentSpent = Number(typedExistingCampaign?.spent_budget) || 0
     const newSpent = spent_budget !== undefined ? Number(spent_budget) : currentSpent
 
     // Validate budget constraints
@@ -94,8 +99,9 @@ export async function PUT(
       )
     }
 
-    // Prepare update data
-    const updateData: any = {
+    // Prepare update data - use same pattern as users route
+    type CampaignUpdate = Database['public']['Tables']['campaigns']['Update']
+    const updateData: CampaignUpdate = {
       updated_at: new Date().toISOString(),
     }
 
@@ -115,9 +121,10 @@ export async function PUT(
     if (end_date !== undefined) updateData.end_date = end_date || null
 
     // Update campaign (admin can update any campaign)
+    // Explicitly type the update to help TypeScript inference
     const { data: updatedCampaign, error: updateError } = await adminSupabase
       .from('campaigns')
-      .update(updateData)
+      .update(updateData satisfies Database['public']['Tables']['campaigns']['Update'])
       .eq('id', campaignId)
       .select()
       .single()

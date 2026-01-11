@@ -1,5 +1,5 @@
 import { createServerClient } from '@supabase/ssr'
-import { createClient as createSupabaseClient } from '@supabase/supabase-js'
+import { createClient as createSupabaseClient, type SupabaseClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import type { Database } from '@spotx/shared-config/types'
 
@@ -35,7 +35,7 @@ export async function createClient() {
  * Use this ONLY for server-side operations where RLS should be bypassed
  * DO NOT expose this to the client
  */
-export function createServiceRoleClient() {
+export function createServiceRoleClient(): SupabaseClient<Database> {
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
   
   if (!serviceRoleKey) {

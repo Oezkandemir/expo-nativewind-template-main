@@ -69,7 +69,7 @@ export default async function AdminCampaignsPage() {
     uniqueUsers: Set<string>
   }> = {}
 
-  allAdViews?.forEach((view) => {
+  allAdViews?.forEach((view: any) => {
     const campaignId = view.campaign_id
     if (!campaignId) return
 
@@ -96,11 +96,11 @@ export default async function AdminCampaignsPage() {
 
   // Calculate totals
   const totalCampaigns = campaigns?.length || 0
-  const activeCampaigns = campaigns?.filter(c => c.status === 'active').length || 0
+  const activeCampaigns = campaigns?.filter((c: any) => c.status === 'active').length || 0
   const totalViews = Object.values(campaignViewsMap).reduce((sum, v) => sum + v.views, 0)
   const totalCompleted = Object.values(campaignViewsMap).reduce((sum, v) => sum + v.completed, 0)
   const totalSpent = Object.values(campaignViewsMap).reduce((sum, v) => sum + v.rewards, 0)
-  const totalBudget = campaigns?.reduce((sum, c) => sum + (Number(c.total_budget) || 0), 0) || 0
+  const totalBudget = campaigns?.reduce((sum: number, c: any) => sum + (Number(c.total_budget) || 0), 0) || 0
   const uniqueViewers = new Set(
     Object.values(campaignViewsMap).flatMap(v => Array.from(v.uniqueUsers))
   ).size

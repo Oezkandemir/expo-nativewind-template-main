@@ -45,7 +45,7 @@ export default async function AdminActivityPage({
     data: any
   }> = []
   
-  adViews?.forEach((view) => {
+  adViews?.forEach((view: any) => {
     activities.push({
       id: view.id,
       type: 'ad_view',
@@ -55,7 +55,7 @@ export default async function AdminActivityPage({
     })
   })
   
-  rewards?.forEach((reward) => {
+  rewards?.forEach((reward: any) => {
     activities.push({
       id: reward.id,
       type: 'reward',
