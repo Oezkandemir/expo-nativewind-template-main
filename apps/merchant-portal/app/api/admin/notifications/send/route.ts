@@ -109,16 +109,20 @@ export async function POST(request: Request) {
       )
     }
     
-    console.log(`Found ${pushTokens?.length || 0} push tokens`)
+    // Type assertion needed due to TypeScript inference issue with service role client
+    type PushTokenData = { token: string; user_id: string; platform: string | null }
+    const typedPushTokens = (pushTokens || []) as PushTokenData[]
+    
+    console.log(`Found ${typedPushTokens.length} push tokens`)
     
     // Log platform distribution
-    const platformCounts = pushTokens?.reduce((acc: any, token: any) => {
-      acc[token.platform] = (acc[token.platform] || 0) + 1;
+    const platformCounts = typedPushTokens.reduce((acc: any, token: PushTokenData) => {
+      acc[token.platform || 'unknown'] = (acc[token.platform || 'unknown'] || 0) + 1;
       return acc;
-    }, {}) || {};
+    }, {});
     console.log('Platform distribution:', platformCounts);
     
-    if (!pushTokens || pushTokens.length === 0) {
+    if (typedPushTokens.length === 0) {
       return NextResponse.json({
         success: true,
         sentCount: 0,
@@ -131,7 +135,7 @@ export async function POST(request: Request) {
     
     // Create messages for Expo Push API
     // expo-server-sdk v4+ has isExpoPushToken as a static method on Expo class
-    const validTokens = pushTokens.filter(tokenData => {
+    const validTokens = typedPushTokens.filter(tokenData => {
       // Use Expo.isExpoPushToken if available, otherwise check token format
       if (Expo.isExpoPushToken) {
         return Expo.isExpoPushToken(tokenData.token);
@@ -145,7 +149,7 @@ export async function POST(request: Request) {
       return isValid;
     });
     
-    console.log(`Valid tokens: ${validTokens.length} of ${pushTokens.length}`);
+    console.log(`Valid tokens: ${validTokens.length} of ${typedPushTokens.length}`);
     
     const messages = validTokens.map(tokenData => ({
       to: tokenData.token,
@@ -165,7 +169,7 @@ export async function POST(request: Request) {
         success: true,
         sentCount: 0,
         message: 'Keine gültigen Expo Push Tokens gefunden',
-        totalTokens: pushTokens.length,
+        totalTokens: typedPushTokens.length,
         validTokens: 0,
       })
     }

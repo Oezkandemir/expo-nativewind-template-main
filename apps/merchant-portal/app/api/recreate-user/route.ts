@@ -72,8 +72,9 @@ export async function POST(request: Request) {
 
     // Step 3: Create merchant profile
     console.log('Creating merchant profile...')
-    const { error: merchantError } = await supabase
-      .from('merchants')
+    // Type assertion needed due to TypeScript inference issue
+    const { error: merchantError } = await (supabase
+      .from('merchants') as any)
       .insert({
         auth_user_id: authData.user.id,
         company_name: companyName,

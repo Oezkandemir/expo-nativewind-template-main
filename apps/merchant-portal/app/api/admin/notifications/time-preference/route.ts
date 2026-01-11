@@ -38,8 +38,9 @@ export async function POST(request: Request) {
     
     // For now, we'll try to update campaigns table
     // If the column doesn't exist, you'll need to add it via migration
-    const { error: updateError } = await adminSupabase
-      .from('campaigns')
+    // Type assertion needed due to TypeScript inference issue with service role client
+    const { error: updateError } = await (adminSupabase
+      .from('campaigns') as any)
       .update({
         notification_time: notificationTime,
         updated_at: new Date().toISOString(),
@@ -84,11 +85,16 @@ export async function GET(request: Request) {
     
     if (campaignId) {
       // Get notification time for specific campaign
-      const { data: campaign, error } = await adminSupabase
-        .from('campaigns')
+      // Type assertion needed due to TypeScript inference issue with service role client
+      type CampaignWithNotificationTime = { notification_time: string | null }
+      const queryResult = await (adminSupabase
+        .from('campaigns') as any)
         .select('notification_time')
         .eq('id', campaignId)
         .single()
+      
+      const campaign = queryResult.data as CampaignWithNotificationTime | null
+      const error = queryResult.error
       
       if (error) {
         return NextResponse.json(
@@ -102,8 +108,9 @@ export async function GET(request: Request) {
       })
     } else {
       // Get all notification times
-      const { data: campaigns, error } = await adminSupabase
-        .from('campaigns')
+      // Type assertion needed due to TypeScript inference issue with service role client
+      const { data: campaigns, error } = await (adminSupabase
+        .from('campaigns') as any)
         .select('id, notification_time')
       
       if (error) {
@@ -113,8 +120,12 @@ export async function GET(request: Request) {
         )
       }
       
+      // Type assertion for campaigns data
+      type CampaignWithNotificationTime = { id: string; notification_time: string | null }
+      const typedCampaigns = (campaigns || []) as CampaignWithNotificationTime[]
+      
       const preferences: Record<string, string> = {}
-      campaigns?.forEach(c => {
+      typedCampaigns.forEach(c => {
         if (c.notification_time) {
           preferences[c.id] = c.notification_time
         }

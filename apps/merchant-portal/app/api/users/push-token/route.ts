@@ -71,17 +71,23 @@ export async function POST(request: Request) {
     const adminSupabase = createServiceRoleClient()
     
     // Check if token already exists for this user
-    const { data: existingToken } = await adminSupabase
-      .from('push_tokens')
+    // Type assertion needed due to TypeScript inference issue with service role client
+    const { data: existingTokenData } = await (adminSupabase
+      .from('push_tokens') as any)
       .select('id')
       .eq('user_id', user.id)
       .eq('token', token)
       .single()
     
+    // Type assertion for existingToken
+    type PushTokenId = { id: string }
+    const existingToken = existingTokenData as PushTokenId | null
+    
     if (existingToken) {
       // Update existing token
-      const { error: updateError } = await adminSupabase
-        .from('push_tokens')
+      // Type assertion needed due to TypeScript inference issue with service role client
+      const { error: updateError } = await (adminSupabase
+        .from('push_tokens') as any)
         .update({
           platform,
           device_id: deviceId || null,
@@ -103,8 +109,9 @@ export async function POST(request: Request) {
       })
     } else {
       // Insert new token
-      const { error: insertError } = await adminSupabase
-        .from('push_tokens')
+      // Type assertion needed due to TypeScript inference issue with service role client
+      const { error: insertError } = await (adminSupabase
+        .from('push_tokens') as any)
         .insert({
           user_id: user.id,
           token,

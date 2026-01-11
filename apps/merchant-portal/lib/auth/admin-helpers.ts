@@ -69,10 +69,15 @@ export async function getAllMerchants() {
   await requireAdmin()
   
   // Try direct query first (should work with RLS policy)
-  let { data: merchants, error } = await supabase
-    .from('merchants')
+  // Type assertion needed due to TypeScript inference issue
+  const { data: merchantsData, error } = await (supabase
+    .from('merchants') as any)
     .select('*')
     .order('created_at', { ascending: false })
+
+  // Type assertion for merchants
+  type MerchantRow = any
+  let merchants = (merchantsData || []) as MerchantRow[]
 
   // If RLS blocks, use database function as fallback
   if (error) {
@@ -85,8 +90,11 @@ export async function getAllMerchants() {
       return []
     }
     
+    // Type assertion needed due to TypeScript inference issue
+    const typedFunctionResult = (functionResult || []) as MerchantRow[]
+    
     // Map function result to match expected structure
-    merchants = functionResult?.map((m: any) => ({
+    merchants = typedFunctionResult.map((m: any) => ({
       id: m.id,
       auth_user_id: m.auth_user_id,
       user_id: m.user_id,
@@ -115,8 +123,9 @@ export async function updateMerchantStatus(merchantId: string, status: 'pending'
   // Verify admin status
   await requireAdmin()
   
-  const { data, error } = await supabase
-    .from('merchants')
+  // Type assertion needed due to TypeScript inference issue
+  const { data, error } = await (supabase
+    .from('merchants') as any)
     .update({ 
       status,
       updated_at: new Date().toISOString()

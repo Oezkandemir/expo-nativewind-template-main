@@ -73,8 +73,9 @@ export async function PUT(
     if (body.notifications_enabled !== undefined) updateData.notifications_enabled = body.notifications_enabled
     if (body.onboarding_complete !== undefined) updateData.onboarding_complete = body.onboarding_complete
 
-    const { data: updatedUser, error: updateError } = await adminSupabase
-      .from('users')
+    // Type assertion needed due to TypeScript inference issue with service role client
+    const { data: updatedUser, error: updateError } = await (adminSupabase
+      .from('users') as any)
       .update(updateData)
       .eq('id', userId)
       .select()

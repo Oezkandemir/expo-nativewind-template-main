@@ -26,9 +26,13 @@ export async function getCurrentMerchant() {
     const { data: merchantFromFunction, error: functionError } = await supabase
       .rpc('get_current_merchant')
     
-    if (!functionError && merchantFromFunction && merchantFromFunction.length > 0) {
+    // Type assertion needed due to TypeScript inference issue
+    type MerchantFunctionResult = any[]
+    const typedMerchantFromFunction = (merchantFromFunction || []) as MerchantFunctionResult
+    
+    if (!functionError && typedMerchantFromFunction && typedMerchantFromFunction.length > 0) {
       // Map the function result to match the expected structure
-      const funcResult = merchantFromFunction[0]
+      const funcResult = typedMerchantFromFunction[0]
       merchant = {
         id: funcResult.merchant_id,
         auth_user_id: funcResult.auth_user_id,
@@ -57,14 +61,19 @@ export async function getCurrentMerchant() {
   // Fallback: Try direct query if function didn't work
   if (!merchant) {
     // Try to fetch merchant by auth_user_id
-    let { data: merchantData, error: directError } = await supabase
-      .from('merchants')
+    // Type assertion needed due to TypeScript inference issue
+    const { data: merchantData, error: directError } = await (supabase
+      .from('merchants') as any)
       .select('*')
       .eq('auth_user_id', user.id)
       .maybeSingle()
 
-    if (!directError && merchantData) {
-      merchant = merchantData
+    // Type assertion for merchantData
+    type MerchantRow = any
+    const typedMerchantData = merchantData as MerchantRow | null
+
+    if (!directError && typedMerchantData) {
+      merchant = typedMerchantData
       console.log('Found merchant by auth_user_id:', merchant.id, merchant.company_name)
     } else {
       merchantError = directError
@@ -101,8 +110,9 @@ export async function getCurrentMerchant() {
   // Update merchant with auth_user_id if missing (shouldn't happen, but just in case)
   if (merchant && !merchant.auth_user_id) {
     console.log('Updating merchant with auth_user_id:', user.id)
-    const { error: updateError } = await supabase
-      .from('merchants')
+    // Type assertion needed due to TypeScript inference issue
+    const { error: updateError } = await (supabase
+      .from('merchants') as any)
       .update({ auth_user_id: user.id })
       .eq('id', merchant.id)
     

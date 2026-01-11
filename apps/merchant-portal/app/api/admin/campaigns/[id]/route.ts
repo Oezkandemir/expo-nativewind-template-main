@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase/server'
 import { requireAdmin } from '@/lib/auth/admin-helpers'
-import type { Database } from '@spotx/shared-config/types'
+import type { Database as DatabaseType } from '@spotx/shared-config/types'
 
 /**
  * GET /api/admin/campaigns/[id]
@@ -85,7 +85,7 @@ export async function PUT(
       .single()
 
     // Type assertion
-    type CampaignRow = Database['public']['Tables']['campaigns']['Row']
+    type CampaignRow = DatabaseType['public']['Tables']['campaigns']['Row']
     const typedExistingCampaign = existingCampaign as Pick<CampaignRow, 'spent_budget'> | null
 
     const currentSpent = Number(typedExistingCampaign?.spent_budget) || 0
@@ -99,9 +99,8 @@ export async function PUT(
       )
     }
 
-    // Prepare update data - use same pattern as users route
-    type CampaignUpdate = Database['public']['Tables']['campaigns']['Update']
-    const updateData: CampaignUpdate = {
+    // Prepare update data - build object directly
+    const updateData: Record<string, unknown> = {
       updated_at: new Date().toISOString(),
     }
 
@@ -121,8 +120,9 @@ export async function PUT(
     if (end_date !== undefined) updateData.end_date = end_date || null
 
     // Update campaign (admin can update any campaign)
-    const { data: updatedCampaign, error: updateError } = await adminSupabase
-      .from('campaigns')
+    // Type assertion needed due to TypeScript inference issue with service role client
+    const { data: updatedCampaign, error: updateError } = await (adminSupabase
+      .from('campaigns') as any)
       .update(updateData)
       .eq('id', campaignId)
       .select()

@@ -96,6 +96,10 @@ export async function PUT(
       )
     }
 
+    // Type assertion needed due to TypeScript inference issue
+    type CampaignWithSpentBudget = { id: string; merchant_id: string; spent_budget: number }
+    const typedExistingCampaign = existingCampaign as CampaignWithSpentBudget
+
     const body = await request.json()
     const {
       name,
@@ -143,7 +147,7 @@ export async function PUT(
     const FIXED_DURATION_SECONDS = 5
 
     // Don't allow reducing total_budget below spent_budget
-    const spentBudget = Number(existingCampaign.spent_budget) || 0
+    const spentBudget = Number(typedExistingCampaign.spent_budget) || 0
     if (total_budget < spentBudget) {
       return NextResponse.json(
         { error: `Das Gesamtbudget kann nicht unter den bereits ausgegebenen Betrag (€${spentBudget.toFixed(2)}) gesenkt werden.` },
@@ -189,8 +193,9 @@ export async function PUT(
     }
 
     // Update campaign
-    const { data: updatedCampaign, error: updateError } = await supabase
-      .from('campaigns')
+    // Type assertion needed due to TypeScript inference issue
+    const { data: updatedCampaign, error: updateError } = await (supabase
+      .from('campaigns') as any)
       .update(updateData)
       .eq('id', campaignId)
       .eq('merchant_id', merchant.id)

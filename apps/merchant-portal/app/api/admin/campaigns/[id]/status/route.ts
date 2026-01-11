@@ -27,8 +27,9 @@ export async function PATCH(
       )
     }
 
-    const { data: updatedCampaign, error: updateError } = await adminSupabase
-      .from('campaigns')
+    // Type assertion needed due to TypeScript inference issue with service role client
+    const { data: updatedCampaign, error: updateError } = await (adminSupabase
+      .from('campaigns') as any)
       .update({ 
         status,
         updated_at: new Date().toISOString(),

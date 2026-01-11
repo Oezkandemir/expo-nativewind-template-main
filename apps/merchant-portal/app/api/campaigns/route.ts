@@ -145,8 +145,9 @@ export async function POST(request: Request) {
     }
 
     // Try to create campaign with regular client first (respects RLS)
-    let campaignResult = await supabase
-      .from('campaigns')
+    // Type assertion needed due to TypeScript inference issue
+    let campaignResult = await (supabase
+      .from('campaigns') as any)
       .insert(campaignData)
       .select()
       .single()
@@ -155,8 +156,9 @@ export async function POST(request: Request) {
     if (campaignResult.error && campaignResult.error.code === '42501') {
       console.warn('RLS blocked insert, trying with service role client...')
       const serviceClient = createServiceRoleClient()
-      campaignResult = await serviceClient
-        .from('campaigns')
+      // Type assertion needed due to TypeScript inference issue
+      campaignResult = await (serviceClient
+        .from('campaigns') as any)
         .insert(campaignData)
         .select()
         .single()

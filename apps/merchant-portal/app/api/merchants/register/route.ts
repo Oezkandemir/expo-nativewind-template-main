@@ -81,8 +81,9 @@ export async function POST(request: Request) {
 
     // Try with auth_user_id first (if column exists)
     // Note: auth_user_id might not be in the type definition, so we use type assertion
-    let result = await supabase
-      .from('merchants')
+    // Type assertion needed due to TypeScript inference issue
+    let result = await (supabase
+      .from('merchants') as any)
       .insert({
         ...merchantData,
         auth_user_id: authUserId,
@@ -96,8 +97,9 @@ export async function POST(request: Request) {
       
       if (isColumnError) {
         console.log('auth_user_id column not found, inserting without it')
-        result = await supabase
-          .from('merchants')
+        // Type assertion needed due to TypeScript inference issue
+        result = await (supabase
+          .from('merchants') as any)
           .insert(merchantData)
           .select()
       }
