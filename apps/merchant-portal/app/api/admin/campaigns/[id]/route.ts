@@ -121,10 +121,9 @@ export async function PUT(
     if (end_date !== undefined) updateData.end_date = end_date || null
 
     // Update campaign (admin can update any campaign)
-    // Use type assertion to work around TypeScript inference issue
     const { data: updatedCampaign, error: updateError } = await adminSupabase
       .from('campaigns')
-      .update(updateData as Database['public']['Tables']['campaigns']['Update'])
+      .update(updateData)
       .eq('id', campaignId)
       .select()
       .single()
