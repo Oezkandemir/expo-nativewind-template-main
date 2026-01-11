@@ -1,7 +1,0 @@
-# Ignore everything except merchant-portal for Vercel deployment
-/*
-!apps/
-apps/*
-!apps/merchant-portal/
-!vercel.json
-!.git
