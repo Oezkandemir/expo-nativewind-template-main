@@ -111,11 +111,10 @@ export async function getCurrentMerchant() {
   // Update merchant with auth_user_id if missing (shouldn't happen, but just in case)
   if (merchant && !merchant.auth_user_id) {
     console.log('Updating merchant with auth_user_id:', user.id)
-    // Use proper type for update
-    type MerchantUpdate = Database['public']['Tables']['merchants']['Update']
-    const updateData: MerchantUpdate = { auth_user_id: user.id }
-    const { error: updateError } = await supabase
-      .from('merchants')
+    // Use type assertion to fix TypeScript inference issue
+    const updateData = { auth_user_id: user.id }
+    const { error: updateError } = await (supabase
+      .from('merchants') as any)
       .update(updateData)
       .eq('id', merchant.id)
     
