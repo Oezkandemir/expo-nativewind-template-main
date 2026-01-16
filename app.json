@@ -99,11 +99,6 @@
         "projectId": "8ddfb1eb-b6c2-44dc-ad88-00e4652e956c"
       }
     },
-    "autolinking": {
-      "android": {
-        "exclude": ["react-native-worklets"]
-      }
-    },
     "owner": "demiroo"
   }
 }
