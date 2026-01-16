@@ -1,4 +1,4 @@
-import { Tabs, useSegments, useRouter } from "expo-router";
+import { Tabs, useRouter } from "expo-router";
 import React, { useEffect } from "react";
 
 import { HapticTab } from "@/components/HapticTab";
@@ -7,7 +7,6 @@ import TabBarBackground from "@/components/ui/TabBarBackground";
 import { useAuth } from "@/hooks/useAuth";
 
 export default function TabLayout() {
-  const segments = useSegments();
   const router = useRouter();
   const { isAuthenticated, loading: authLoading } = useAuth();
   
