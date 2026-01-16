@@ -88,7 +88,8 @@
           "isAndroidBackgroundLocationEnabled": false
         }
       ],
-      "./plugins/withIosIcons.js"
+      "./plugins/withIosIcons.js",
+      "./plugins/withAppleTouchIcons.js"
     ],
     "experiments": {
       "typedRoutes": true
