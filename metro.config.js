@@ -1,3 +1,5 @@
+// This config extends @expo/metro-config via getDefaultConfig
+// EAS Build detection: This file uses getDefaultConfig from expo/metro-config
 const { getDefaultConfig } = require("expo/metro-config");
 const { withNativeWind } = require("nativewind/metro");
 const path = require("path");
@@ -8,6 +10,7 @@ const projectRoot = path.resolve(__dirname);
 
 /** @type {import('expo/metro-config').MetroConfig} */
 // Call getDefaultConfig with projectRoot to ensure it's set correctly
+// This extends @expo/metro-config as required by EAS Build
 const baseConfig = getDefaultConfig(projectRoot);
 
 // Verify global.css exists
@@ -83,5 +86,14 @@ config.resolver = {
     "react-native-worklets": require.resolve("react-native-worklets-core"),
   },
 };
+
+// Ensure config maintains structure from getDefaultConfig
+// This helps EAS Build detect that we're extending @expo/metro-config
+if (!config.transformer) {
+  config.transformer = baseConfig.transformer || {};
+}
+if (!config.serializer) {
+  config.serializer = baseConfig.serializer || {};
+}
 
 module.exports = config;
