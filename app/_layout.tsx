@@ -32,7 +32,7 @@ let nativeSplashHidden = false;
 
 function RootLayoutNav() {
   const { isAuthenticated, loading: authLoading } = useAuth();
-  const segments = useSegments();
+  const segments = useSegments() as string[];
   const router = useRouter();
   const [isNavigationReady, setIsNavigationReady] = useState(false);
   const hasCheckedInitialRoute = useRef(false);
@@ -54,7 +54,7 @@ function RootLayoutNav() {
           // Authenticated - show main app
           if (segments[0] === '(onboarding)') {
             // Redirect from onboarding screens to main app
-            const currentScreen = segments[1] as string | undefined;
+            const currentScreen = segments[1];
             // Allow navigation through onboarding flow, but redirect from complete screen
             if (currentScreen === 'complete') {
               router.replace('/(tabs)');
@@ -80,7 +80,7 @@ function RootLayoutNav() {
       } else {
         // If user becomes authenticated, redirect to main app (unless already in onboarding flow)
         if (segments[0] === '(onboarding)') {
-          const currentScreen = segments[1] as string | undefined;
+          const currentScreen = segments[1];
           // Only redirect from complete screen, allow navigation through onboarding
           if (currentScreen === 'complete') {
             router.replace('/(tabs)');
