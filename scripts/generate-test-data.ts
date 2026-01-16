@@ -11,7 +11,20 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
-import { SUPABASE_CONFIG } from '../lib/supabase/config.local';
+
+// Try to import config.local, but fall back to environment variables
+let SUPABASE_CONFIG: { url: string; anonKey: string };
+try {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const config = require('../lib/supabase/config.local');
+  SUPABASE_CONFIG = config.SUPABASE_CONFIG;
+} catch {
+  // Fall back to environment variables (for CI/CD)
+  SUPABASE_CONFIG = {
+    url: process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+    anonKey: process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
+  };
+}
 
 // Service Role Key aus Umgebungsvariable (falls gesetzt)
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY;

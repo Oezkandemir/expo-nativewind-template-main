@@ -54,7 +54,7 @@ function RootLayoutNav() {
           // Authenticated - show main app
           if (segments[0] === '(onboarding)') {
             // Redirect from onboarding screens to main app
-            const currentScreen = segments[1];
+            const currentScreen = segments[1] as string | undefined;
             // Allow navigation through onboarding flow, but redirect from complete screen
             if (currentScreen === 'complete') {
               router.replace('/(tabs)');
@@ -80,7 +80,7 @@ function RootLayoutNav() {
       } else {
         // If user becomes authenticated, redirect to main app (unless already in onboarding flow)
         if (segments[0] === '(onboarding)') {
-          const currentScreen = segments[1];
+          const currentScreen = segments[1] as string | undefined;
           // Only redirect from complete screen, allow navigation through onboarding
           if (currentScreen === 'complete') {
             router.replace('/(tabs)');
