@@ -1,7 +1,7 @@
 {
   "name": "expo-nativewind-template",
   "main": "expo-router/entry",
-  "version": "0.1.0",
+  "version": "2.0.3",
   "description": "A production-ready Expo template with NativeWind, TypeScript, and 20+ pre-built UI components",
   "author": "Krishna Kumar",
   "license": "MIT",
@@ -33,6 +33,7 @@
     "typecheck": "tsc --noEmit",
     "dev": "expo start --clear",
     "prebuild": "npm run typecheck && npm run lint",
+    "validate:ios": "./scripts/validate-ios-config.sh",
     "build:ios": "eas build --platform ios",
     "build:ios:local": "eas build --platform ios --local",
     "build:android": "eas build --platform android",
@@ -42,15 +43,15 @@
     "build:dev:ios": "eas build --platform ios --profile development",
     "build:preview:ios": "eas build --platform ios --profile preview",
     "build:preview:android": "eas build --platform android --profile preview",
-    "build:production:ios": "npm run prebuild && eas build --platform ios --profile production",
+    "build:production:ios": "npm run prebuild && npm run validate:ios && eas build --platform ios --profile production",
     "build:production:android": "npm run prebuild && eas build --platform android --profile production",
     "build:production:all": "npm run prebuild && eas build --platform all --profile production",
     "submit:android": "eas submit --platform android --profile production",
-    "submit:ios": "eas submit --platform ios --profile production",
+    "submit:ios": "eas submit --platform ios --latest",
     "build-and-submit:android": "npm run build:production:android && npm run submit:android",
     "build-and-submit:ios": "npm run build:production:ios && npm run submit:ios",
     "build-dev-and-submit:ios": "eas build --platform ios --profile development && eas submit --platform ios --latest",
-    "postinstall": "patch-package"
+    "postinstall": "patch-package && node scripts/fix-gradle-settings.js"
   },
   "dependencies": {
     "@expo/vector-icons": "^14.1.0",

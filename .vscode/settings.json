@@ -1,8 +1,36 @@
 {
-  "editor.codeActionsOnSave": {
-    "source.fixAll": "explicit",
-    "source.organizeImports": "explicit",
-    "source.sortMembers": "explicit"
+  "files.exclude": {
+    "**/node_modules/**/android": true,
+    "**/node_modules/**/android/.settings": true,
+    "**/node_modules/**/android/.gradle": true
   },
-  "java.compile.nullAnalysis.mode": "disabled"
+  "files.watcherExclude": {
+    "**/node_modules/**/android/**": true,
+    "**/node_modules/**/ios/**": true
+  },
+  "search.exclude": {
+    "**/node_modules/**/android": true
+  },
+  "java.configuration.updateBuildConfiguration": "automatic",
+  "java.import.gradle.enabled": false,
+  "java.import.gradle.wrapper.enabled": false,
+  "java.import.gradle.offline.enabled": false,
+  "java.import.gradle.java.home": "",
+  "java.import.gradle.user.home": "",
+  "java.import.gradle.arguments": "",
+  "java.import.gradle.jvmArguments": "",
+  "java.import.gradle.version": "",
+  "gradle.nestedProjects": false,
+  "gradle.experimental.enableProjectDiagnostics": false,
+  "typescript.preferences.includePackageJsonAutoImports": "off",
+  "typescript.validate.enable": true,
+  "typescript.tsserver.experimental.enableProjectDiagnostics": false,
+  "files.associations": {
+    "**/node_modules/**/android/**": "plaintext"
+  },
+  "java.errors.incompleteClasspath.severity": "ignore",
+  "java.configuration.maven.userSettings": "",
+  "java.import.maven.enabled": false,
+  "java.compile.nullAnalysis.mode": "automatic",
+  "java.configuration.checkProjectSettingsExclusions": false
 }

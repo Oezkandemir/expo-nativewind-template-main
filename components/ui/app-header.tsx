@@ -1,8 +1,8 @@
-import React from 'react';
-import { View, StyleSheet, Platform, Pressable } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, usePathname } from 'expo-router';
 import { ChevronLeft } from 'lucide-react-native';
+import React from 'react';
+import { Platform, Pressable, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { iconWithClassName } from './lib/icons/icon-with-classname';
 import { Logo } from './logo';
 
@@ -68,7 +68,7 @@ export function AppHeader({ showLogo = true, className }: AppHeaderProps) {
           </Pressable>
         )}
         <View style={[styles.logoContainer, !showBackButton && styles.logoContainerCentered]}>
-          <Logo size="medium" showAnimation={true} variant="light" />
+          <Logo size="medium" showAnimation={true} variant="light" showSlogan={true} />
         </View>
         {showBackButton && <View style={styles.backButtonPlaceholder} />}
       </View>
@@ -115,7 +115,6 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    height: 44, // Fixed height to prevent excessive space
   },
   logoContainerCentered: {
     flex: 1,

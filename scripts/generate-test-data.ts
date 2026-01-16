@@ -11,7 +11,6 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
-import type { Database } from '../lib/supabase/types';
 import { SUPABASE_CONFIG } from '../lib/supabase/config.local';
 
 // Service Role Key aus Umgebungsvariable (falls gesetzt)
@@ -19,8 +18,8 @@ const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NE
 
 // Erstelle Supabase Client mit Service Role Key (umgeht RLS)
 const supabase = SERVICE_ROLE_KEY
-  ? createClient<Database>(SUPABASE_CONFIG.url, SERVICE_ROLE_KEY)
-  : createClient<Database>(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey);
+  ? createClient<any>(SUPABASE_CONFIG.url, SERVICE_ROLE_KEY)
+  : createClient<any>(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey);
 
 // Interessen für Targeting
 const INTERESTS = [
@@ -440,7 +439,7 @@ async function generateTestData(): Promise<GenerationResult> {
           try {
             // Verwende Admin API um User zu erstellen (ohne Email-Bestätigung)
             // Der Service Role Client hat Zugriff auf auth.admin
-            const adminClient = createClient<Database>(SUPABASE_CONFIG.url, SERVICE_ROLE_KEY);
+            const adminClient = createClient<any>(SUPABASE_CONFIG.url, SERVICE_ROLE_KEY);
             const { data: authData, error: authError } = await adminClient.auth.admin.createUser({
               email: merchantData.email,
               password: merchantData.password,

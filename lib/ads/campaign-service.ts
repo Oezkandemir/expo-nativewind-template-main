@@ -6,8 +6,8 @@
  */
 
 import { supabase } from '@/lib/supabase/client';
-import type { Ad } from '@/types/ad';
 import type { Database } from '@/lib/supabase/types';
+import type { Ad } from '@/types/ad';
 
 type Campaign = Database['public']['Tables']['campaigns']['Row'];
 
@@ -41,7 +41,7 @@ export class CampaignService {
       }
 
       // Filter out campaigns that have exceeded their budget
-      const campaignsWithinBudget = data.filter((campaign) => {
+      const campaignsWithinBudget = (data as unknown as Campaign[]).filter((campaign) => {
         const spent = Number(campaign.spent_budget) || 0;
         const total = Number(campaign.total_budget) || 0;
         return spent < total;
@@ -54,7 +54,7 @@ export class CampaignService {
       // Filter by interests if user has any
       let filtered = campaignsWithinBudget;
       if (userInterests && userInterests.length > 0) {
-        filtered = data.filter((campaign) => {
+        filtered = (data as unknown as Campaign[]).filter((campaign) => {
           // If campaign has no targeting, show to everyone
           if (!campaign.target_interests || campaign.target_interests.length === 0) {
             return true;
@@ -68,7 +68,7 @@ export class CampaignService {
 
         // If no campaigns match interests, fall back to all campaigns
         if (filtered.length === 0) {
-          filtered = data;
+          filtered = data as unknown as Campaign[];
         }
       }
 
@@ -123,14 +123,14 @@ export class CampaignService {
           return null;
         }
         
-        return this.campaignToAd(fallbackData);
+        return this.campaignToAd(fallbackData as unknown as Campaign);
       }
 
       if (!data) {
         return null;
       }
 
-      return this.campaignToAd(data);
+      return this.campaignToAd(data as unknown as Campaign);
     } catch (error) {
       console.error('Error in getCampaignById:', error);
       return null;
@@ -174,7 +174,7 @@ export class CampaignService {
       const { error } = await supabase.rpc('increment_campaign_spend', {
         p_campaign_id: campaignId,
         p_spend_amount: amount,
-      });
+      } as any);
 
       if (error) {
         console.error('Error incrementing campaign spend:', error);
@@ -212,7 +212,7 @@ export class CampaignService {
         p_completed: completed,
         p_watch_time: watchTimeInteger,
         p_reward: reward,
-      });
+      } as any);
 
       if (error) {
         console.error('Error updating campaign stats:', error);
@@ -252,7 +252,8 @@ export class CampaignService {
       }
 
       // Return name if available, otherwise use title as fallback
-      return data.name || data.title || 'Unbekannte Kampagne';
+      const campaignData = data as any;
+      return campaignData.name || campaignData.title || 'Unbekannte Kampagne';
     } catch (error) {
       console.error('Error in getCampaignName:', error);
       return 'Unbekannte Kampagne';

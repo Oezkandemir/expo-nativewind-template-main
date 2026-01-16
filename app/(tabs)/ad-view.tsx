@@ -1,15 +1,15 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { View, Image, StatusBar, Platform, Dimensions, Animated, Easing, BackHandler, Pressable } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
-import { BlurView } from 'expo-blur';
+import { Logo } from '@/components/ui/logo';
 import { Text } from '@/components/ui/text';
 import { useToast } from '@/components/ui/toast';
 import { useAds } from '@/hooks/useAds';
 import { useRewards } from '@/hooks/useRewards';
 import { getCurrentActiveSlot } from '@/lib/ads/ad-scheduler';
 import { USER_REWARD_PER_CAMPAIGN } from '@/lib/rewards/reward-calculator';
-import { X, Sparkles } from 'lucide-react-native';
-import { Logo } from '@/components/ui/logo';
+import { BlurView } from 'expo-blur';
+import { router, useLocalSearchParams } from 'expo-router';
+import { Sparkles, X } from 'lucide-react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Animated, BackHandler, Dimensions, Easing, Image, Platform, Pressable, StatusBar, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function AdViewScreen() {
@@ -161,7 +161,7 @@ export default function AdViewScreen() {
         });
       }, 1000);
       
-      timerIntervalRef.current = timer;
+      timerIntervalRef.current = timer as any;
 
       return () => {
         if (timerIntervalRef.current) {

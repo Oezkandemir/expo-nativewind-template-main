@@ -8,11 +8,10 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
-import type { Database } from '../lib/supabase/types';
 import { SUPABASE_CONFIG } from '../lib/supabase/config.local';
 
 // Create Supabase client
-const supabase = createClient<Database>(
+const supabase = createClient<any>(
   SUPABASE_CONFIG.url,
   SUPABASE_CONFIG.anonKey
 );

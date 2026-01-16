@@ -1,15 +1,15 @@
-import { useState, useEffect } from 'react';
-import { View, ActivityIndicator } from 'react-native';
-import { Text } from '@/components/ui/text';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Pressable } from '@/components/ui/pressable';
+import { Text } from '@/components/ui/text';
+import { cn } from '@/components/ui/utils/cn';
 import { useAds } from '@/hooks/useAds';
 import { useAuth } from '@/hooks/useAuth';
-import { formatCurrency } from '@/lib/rewards/reward-calculator';
-import { cn } from '@/components/ui/utils/cn';
 import { campaignService } from '@/lib/ads/campaign-service';
-import { AdView } from '@/types/ad';
+import { formatCurrency } from '@/lib/rewards/reward-calculator';
 import { supabase } from '@/lib/supabase/client';
+import { AdView } from '@/types/ad';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, View } from 'react-native';
 
 type TimeRange = 7 | 30 | 90;
 
@@ -83,7 +83,7 @@ export function HistoryWidget({ className }: HistoryWidgetProps) {
               .maybeSingle();
             
             if (!campaignError && campaignData) {
-              names[campaignId] = campaignData.name || campaignData.title || 'Unbekannte Kampagne';
+              names[campaignId] = (campaignData as any).name || (campaignData as any).title || 'Unbekannte Kampagne';
             } else {
               // Fallback: try campaign service
               const campaign = await campaignService.getCampaignById(campaignId);
@@ -183,7 +183,7 @@ export function HistoryWidget({ className }: HistoryWidgetProps) {
         ) : views.length > 0 ? (
           <View className="gap-2">
             {views.map((view) => {
-              const campaignName = view.campaignId ? campaignNames[view.campaignId] || 'Unbekannte Kampagne' : 'Unbekannte Kampagne';
+              const campaignName = (view as any).adId ? campaignNames[(view as any).adId] || 'Unbekannte Kampagne' : 'Unbekannte Kampagne';
               return (
                 <View
                   key={view.id}

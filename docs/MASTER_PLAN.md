@@ -190,6 +190,7 @@ export function useMemoizedCallback<T extends (...args: any[]) => any>(
 - [ ] Datenerfassung deklarieren (Location, Contacts, etc.)
 - [ ] GDPR Compliance (EU)
 - [ ] CCPA Compliance (Kalifornien)
+- [ ] EU-Geoblocking-Verordnung (EU) 2018/302 Compliance (siehe `EU_GEOBLOCKING_COMPLIANCE.md`)
 
 #### 2. **Content Rating**
 - [ ] IARC Rating durchführen

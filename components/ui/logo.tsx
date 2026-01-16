@@ -1,13 +1,13 @@
-import React, { useEffect } from 'react';
-import { View, StyleSheet } from 'react-native';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-  withDelay,
-  Easing,
-} from 'react-native-reanimated';
 import { X } from 'lucide-react-native';
+import React, { useEffect } from 'react';
+import { StyleSheet, View } from 'react-native';
+import Animated, {
+    Easing,
+    useAnimatedStyle,
+    useSharedValue,
+    withDelay,
+    withTiming,
+} from 'react-native-reanimated';
 import { Text } from './text';
 
 interface LogoProps {
@@ -18,12 +18,12 @@ interface LogoProps {
 }
 
 const sizeMap = {
-  small: { text: 20, icon: 28, gap: 4 }, // X is 40% larger than text
-  medium: { text: 32, icon: 45, gap: 6 }, // X is 40% larger than text
-  large: { text: 72, icon: 101, gap: 12 }, // X is 40% larger than text - bigger for splash screen
+  small: { text: 20, icon: 28, gap: 4, slogan: 10 },
+  medium: { text: 32, icon: 45, gap: 6, slogan: 12 },
+  large: { text: 72, icon: 101, gap: 12, slogan: 24 },
 };
 
-export function Logo({ size = 'medium', showAnimation = false, className, variant = 'auto' }: LogoProps) {
+export function Logo({ size = 'medium', showAnimation = false, className, variant = 'auto', showSlogan = false }: LogoProps & { showSlogan?: boolean }) {
   const rotation = useSharedValue(0);
   const iconColor = '#EF4444'; // Red color for X icon
 
@@ -32,19 +32,18 @@ export function Logo({ size = 'medium', showAnimation = false, className, varian
   const sizes = sizeMap[validSize];
 
   // Determine text color based on variant
-  // 'auto' uses foreground color (adapts to theme), 'light' uses white, 'dark' uses dark
   const getTextColor = () => {
     if (variant === 'light') return '#FFFFFF';
     if (variant === 'dark') return '#0F172A';
-    return undefined; // 'auto' - let NativeWind handle it with text-foreground
+    return undefined; // 'auto'
   };
 
   const textColor = getTextColor();
   const textClassName = variant === 'auto' ? 'text-foreground' : '';
+  const sloganClassName = variant === 'auto' ? 'text-muted-foreground' : variant === 'light' ? 'text-white/80' : 'text-slate-600';
 
   useEffect(() => {
     if (showAnimation) {
-      // Rotate X icon once clockwise (360 degrees)
       rotation.value = withDelay(
         400,
         withTiming(360, {
@@ -53,14 +52,12 @@ export function Logo({ size = 'medium', showAnimation = false, className, varian
         })
       );
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showAnimation]);
 
   const iconStyle = useAnimatedStyle(() => ({
     transform: [{ rotate: `${rotation.value}deg` }],
   }));
 
-  // Padding only for large size (splash screen), not for medium/small (header)
   const containerStyle = [
     styles.container,
     validSize === 'large' && {
@@ -76,51 +73,74 @@ export function Logo({ size = 'medium', showAnimation = false, className, varian
 
   return (
     <View style={containerStyle} className={className}>
-      <Text
-        variant="h1"
-        style={[
-          styles.text,
-          {
-            fontSize: sizes.text,
-            ...(textColor && { color: textColor }), // Only set color if variant is not 'auto'
-            fontWeight: '700',
-            // Add line height for large size to prevent clipping
-            ...(validSize === 'large' && { lineHeight: sizes.text * 1.2 }),
-            // Remove any margin/padding that could create gap
-            marginRight: 0,
-            paddingRight: 0,
-          },
-        ]}
-        className={textClassName || (variant === 'light' ? 'text-white' : variant === 'dark' ? 'text-slate-900' : 'text-foreground')}
-      >
-        Spot
-      </Text>
-      <Animated.View style={[styles.iconWrapper, iconStyle]}>
-        <X size={sizes.icon} strokeWidth={validSize === 'large' ? 4 : 3} color={iconColor} />
-      </Animated.View>
+      <View style={styles.logoRow}>
+        <Text
+          variant="h1"
+          style={[
+            styles.text,
+            {
+              fontSize: sizes.text,
+              ...(textColor && { color: textColor }),
+              fontWeight: '700',
+              ...(validSize === 'large' && { lineHeight: sizes.text * 1.2 }),
+              marginRight: 0,
+              paddingRight: 0,
+            },
+          ]}
+          className={textClassName || (variant === 'light' ? 'text-white' : variant === 'dark' ? 'text-slate-900' : 'text-foreground')}
+        >
+          Spot
+        </Text>
+        <Animated.View style={[styles.iconWrapper, iconStyle]}>
+          <X size={sizes.icon} strokeWidth={validSize === 'large' ? 4 : 3} color={iconColor} />
+        </Animated.View>
+      </View>
+      {showSlogan && (
+        <Text
+          style={[
+            styles.slogan,
+            {
+              fontSize: sizes.slogan,
+              marginTop: validSize === 'large' ? 4 : 0,
+              ...(textColor && { color: textColor }),
+            }
+          ]}
+          className={sloganClassName}
+        >
+          Popular App
+        </Text>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    // flexDirection default is column, which works for stacking LogoRow and Slogan
+  },
+  logoRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    overflow: 'visible', // Ensure X is not clipped
-    flexWrap: 'nowrap', // Prevent wrapping
-    // Base container - padding will be set dynamically based on size
+    overflow: 'visible',
+    flexWrap: 'nowrap',
   },
   text: {
     letterSpacing: 0.5,
-    // Base text styles - line height adjustments only for large size
+  },
+  slogan: {
+    fontWeight: '500',
+    letterSpacing: 1,
+    opacity: 0.9,
   },
   iconWrapper: {
-    marginLeft: 0, // No gap between text and X icon
-    paddingVertical: 8, // Vertical padding to prevent clipping
-    paddingLeft: 0, // No left padding - zero gap
-    paddingRight: 8, // Right padding to prevent clipping
-    overflow: 'visible', // Ensure X is not clipped
+    marginLeft: 0,
+    paddingVertical: 8,
+    paddingLeft: 0,
+    paddingRight: 8,
+    overflow: 'visible',
     justifyContent: 'center',
     alignItems: 'center',
   },

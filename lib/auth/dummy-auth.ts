@@ -1,5 +1,5 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { User, UserSession } from '@/types/user';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthCredentials, AuthResponse, RegisterData } from './types';
 
 const STORAGE_KEYS = {
@@ -36,7 +36,7 @@ class DummyAuthService {
       const newUser: User = {
         id: `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         email: data.email.toLowerCase(),
-        name: data.name,
+        name: data.name || '',
         password: data.password, // In production, this would be hashed
         interests: [],
         demographics: {
@@ -259,17 +259,20 @@ class DummyAuthService {
           preferences: {
             notificationsEnabled: true,
             adFrequencyPreference: 'standard',
+            widgets: {
+              historyEnabled: false,
+            },
           },
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };
 
-        users.push(testUser);
+        users.push(testUser as User);
         await AsyncStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
       }
 
       // Create session
-      const session = await this.createSession(testUser);
+      const session = await this.createSession(testUser as User);
 
       // Save current user
       await AsyncStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(testUser));

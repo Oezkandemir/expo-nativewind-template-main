@@ -1,10 +1,10 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '@/lib/supabase/client';
 import { AdView, DailyAdStatus } from '@/types/ad';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
-  getTodayDateString,
-  initializeDailyAdStatus,
-  markSlotCompleted,
+    getTodayDateString,
+    initializeDailyAdStatus,
+    markSlotCompleted,
 } from './ad-scheduler';
 
 const STORAGE_KEYS = {
@@ -203,7 +203,7 @@ class AdTrackerService {
           watched_duration: durationInt,
           completed: verified,
           reward_earned: rewardEarned,
-        })
+        } as any)
         .select()
         .single();
 
@@ -213,16 +213,21 @@ class AdTrackerService {
       try {
         const allViews = await this.getAdViews();
         const newView: AdView = {
-          id: data.id, // Use UUID from Supabase
+          id: (data as any).id, // Use UUID from Supabase
           userId,
           adId,
           slotId,
-          watchedAt: data.viewed_at,
+          watchedAt: (data as any).viewed_at,
           duration,
           rewardEarned,
           verified,
-          date: data.viewed_at.split('T')[0],
+          date: (data as any).viewed_at.split('T')[0],
         };
+
+        if (new Date((data as any).viewed_at).toDateString() !== new Date().toDateString()) {
+          console.warn('⚠️ Supabase returned different viewed_at date than expected');
+        }
+
         allViews.push(newView);
         await AsyncStorage.setItem(STORAGE_KEYS.AD_VIEWS, JSON.stringify(allViews));
       } catch (storageError) {
@@ -230,7 +235,7 @@ class AdTrackerService {
       }
 
       // Return the UUID from Supabase
-      return data.id;
+      return (data as any).id;
     } catch (error) {
       console.error('Record ad view to Supabase error:', error);
       // Fallback to AsyncStorage only
@@ -273,7 +278,7 @@ class AdTrackerService {
       if (error) throw error;
 
       // Transform Supabase data to AdView format
-      return data.map((row) => ({
+      return (data as any[]).map((row) => ({
         id: row.id,
         userId: row.user_id,
         adId: row.campaign_id, // Using campaign_id as adId
@@ -313,7 +318,7 @@ class AdTrackerService {
       if (error) throw error;
 
       // Transform Supabase data to AdView format
-      return data.map((row) => ({
+      return (data as any[]).map((row) => ({
         id: row.id,
         userId: row.user_id,
         adId: row.campaign_id,

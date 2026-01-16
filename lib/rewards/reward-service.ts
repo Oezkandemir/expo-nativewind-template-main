@@ -1,7 +1,6 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '@/lib/supabase/client';
-import { Reward, Payout } from '@/types/reward';
-import { adTrackerService } from '@/lib/ads/ad-tracker';
+import { Payout, Reward } from '@/types/reward';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const STORAGE_KEYS = {
   REWARDS: '@spotx:rewards',
@@ -133,7 +132,7 @@ class RewardService {
           type: 'ad_view',
           description: 'Kampagne unterstützt',
           ad_view_id: adViewId,
-        })
+        } as any)
         .select()
         .single();
 
@@ -145,14 +144,14 @@ class RewardService {
         const allRewards: Reward[] = rewardsJson ? JSON.parse(rewardsJson) : [];
 
         const newReward: Reward = {
-          id: data.id, // Use UUID from Supabase
+          id: (data as any).id, // Use UUID from Supabase
           userId,
           amount,
           source: 'ad_view',
           sourceId: adViewId,
           status: 'earned',
           description: 'Kampagne unterstützt',
-          createdAt: data.created_at,
+          createdAt: (data as any).created_at,
         };
 
         allRewards.push(newReward);
@@ -161,7 +160,7 @@ class RewardService {
         console.warn('AsyncStorage backup failed:', storageError);
       }
 
-      return data.id;
+      return (data as any).id;
     } catch (error) {
       console.error('Create reward in Supabase error:', error);
       // Fallback to AsyncStorage only
@@ -191,10 +190,10 @@ class RewardService {
 
         if (rewardsError) throw rewardsError;
 
-        return rewardsData.reduce((sum, reward) => sum + reward.amount, 0);
+        return (rewardsData as any[]).reduce((sum, reward) => sum + reward.amount, 0);
       }
 
-      return data?.total_earned || 0;
+      return (data as any)?.total_earned || 0;
     } catch (error) {
       console.error('Get user total rewards from Supabase error:', error);
       // Fallback to AsyncStorage
@@ -226,7 +225,7 @@ class RewardService {
       if (error) throw error;
 
       // Transform Supabase data to Reward format
-      return data.map((row) => ({
+      return (data as any[]).map((row) => ({
         id: row.id,
         userId: row.user_id,
         amount: row.amount,

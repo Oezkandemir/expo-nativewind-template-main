@@ -1,6 +1,6 @@
-import { supabase } from './client';
 import { User, UserSession } from '@/types/user';
 import { AuthCredentials, AuthResponse, RegisterData } from '../auth/types';
+import { supabase } from './client';
 
 /**
  * Real Supabase Authentication Service
@@ -219,7 +219,8 @@ class SupabaseAuthService {
 
       const { data, error } = await supabase
         .from('users')
-        .update(dbUpdates)
+        // @ts-ignore
+        .update(dbUpdates as any)
         .eq('id', userId)
         .select()
         .single();
@@ -289,7 +290,7 @@ class SupabaseAuthService {
 
       if (error || !data) return false;
 
-      return data.onboarding_complete || false;
+      return (data as any).onboarding_complete || false;
     } catch {
       return false;
     }
@@ -306,7 +307,8 @@ class SupabaseAuthService {
 
       await supabase
         .from('users')
-        .update({ onboarding_complete: complete })
+        // @ts-ignore
+        .update({ onboarding_complete: complete } as any)
         .eq('id', user.id);
     } catch (error) {
       console.error('Set onboarding complete error:', error);

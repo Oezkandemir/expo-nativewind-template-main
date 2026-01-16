@@ -3,33 +3,36 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
 import { Database } from './types';
 
-// Try to import local config first, fall back to example if not found
-let SUPABASE_CONFIG: { url: string; anonKey: string };
+// Try to import local config first, fall back to production credentials if not found
+// Initialize with production fallback first (ensures TypeScript knows it's always assigned)
+let SUPABASE_CONFIG: { url: string; anonKey: string } = {
+  url: 'https://mxdpiqnkowcxbujgrfom.supabase.co',
+  anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im14ZHBpcW5rb3djeGJ1amdyZm9tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgwNjg2OTIsImV4cCI6MjA4MzY0NDY5Mn0.-KxgreAS7P2Ht5cq59yT9Zt0Be8C_l0SSrKFlqeMu-s',
+};
 
 try {
   // Try to load local config (ignored by git, contains real credentials)
-  SUPABASE_CONFIG = require('./config.local').SUPABASE_CONFIG;
-} catch {
-  try {
-    // Fall back to example config (for first-time setup)
-    SUPABASE_CONFIG = require('./config.example').SUPABASE_CONFIG;
-    console.warn('⚠️  Using example Supabase config. Please create lib/supabase/config.local.ts with your credentials.');
-  } catch {
-    // If neither exists, use empty values (will throw error below)
-    SUPABASE_CONFIG = { url: '', anonKey: '' };
+  const localConfig = require('./config.local').SUPABASE_CONFIG;
+  // Check if values are not placeholders
+  if (localConfig.url && localConfig.url !== 'YOUR_SUPABASE_URL_HERE' && 
+      localConfig.anonKey && localConfig.anonKey !== 'YOUR_SUPABASE_ANON_KEY_HERE') {
+    SUPABASE_CONFIG = localConfig;
+  } else {
+    // Placeholder values detected, use production fallback
+    console.warn('⚠️  Using production Supabase config. For development, create lib/supabase/config.local.ts');
   }
+} catch {
+  // config.local.ts not found or invalid, using production fallback
+  console.warn('⚠️  Using production Supabase config. For development, create lib/supabase/config.local.ts');
 }
 
 const supabaseUrl = SUPABASE_CONFIG.url;
 const supabaseAnonKey = SUPABASE_CONFIG.anonKey;
 
-// Validate that credentials are set
-if (!supabaseUrl || supabaseUrl === 'YOUR_SUPABASE_URL_HERE' || !supabaseAnonKey || supabaseAnonKey === 'YOUR_SUPABASE_ANON_KEY_HERE') {
-  console.error('❌ Supabase credentials missing or not configured!');
-  console.error('📝 Please create: lib/supabase/config.local.ts');
-  console.error('📋 Copy from: lib/supabase/config.example.ts');
-  console.error('🔑 Add your Supabase URL and Anon Key');
-  throw new Error('Supabase credentials are not configured. Please create lib/supabase/config.local.ts');
+// Final validation (should never fail with fallback, but safety check)
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error('❌ Supabase credentials missing!');
+  throw new Error('Supabase credentials are not configured');
 }
 
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {

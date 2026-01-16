@@ -8,8 +8,8 @@
  * 4. Offers to delete or update them
  */
 
-import { supabase } from './lib/supabase/client';
-import { DUMMY_ADS } from './lib/ads/dummy-data';
+import { DUMMY_ADS } from '../lib/ads/dummy-data';
+import { supabase } from '../lib/supabase/client';
 
 // Get all valid campaign IDs from dummy data
 const VALID_CAMPAIGN_IDS = DUMMY_ADS.map(ad => ad.campaignId);
@@ -35,13 +35,13 @@ async function cleanupUserCampaigns() {
     }
 
     console.log(`✅ Found ${users.length} user(s):`);
-    users.forEach(user => {
-      console.log(`   - ${user.name || 'Unknown'} (${user.email}) - ID: ${user.id}`);
+    users.forEach((user: any) => {
+      console.log(`- ${user.name} (${user.email}): ${user.id}`);
     });
     console.log('');
 
     // 2. Check ad_views for each user
-    for (const user of users) {
+    for (const user of (users as any[])) {
       console.log(`\n📊 Checking ad_views for ${user.email}...`);
       
       const { data: adViews, error: viewsError } = await supabase
@@ -66,12 +66,12 @@ async function cleanupUserCampaigns() {
       const invalidViews: any[] = [];
       const validViews: any[] = [];
 
-      adViews.forEach(view => {
+      (adViews as any[]).forEach(view => {
         const isValid = VALID_CAMPAIGN_IDS.includes(view.campaign_id);
         const status = isValid ? '✅' : '❌';
         const campaignInfo = isValid 
-          ? `Valid: ${DUMMY_ADS.find(ad => ad.campaignId === view.campaign_id)?.campaignName}`
-          : `INVALID: ${view.campaign_id}`;
+          ? `Valid: ${DUMMY_ADS.find((ad: any) => ad.campaignId === view.campaign_id)?.campaignName}`
+          : `❌ Invalid Campaign ID: ${view.campaign_id}`;
 
         console.log(`   ${status} ${campaignInfo}`);
         console.log(`      ID: ${view.id}`);
@@ -137,7 +137,7 @@ async function cleanupUserCampaigns() {
 
 // Available valid campaign IDs for reference
 console.log('📋 Valid Campaign IDs:');
-DUMMY_ADS.forEach((ad, index) => {
+DUMMY_ADS.forEach((ad: any, index: number) => {
   console.log(`   ${index + 1}. ${ad.campaignId} - ${ad.campaignName}`);
 });
 console.log('');
