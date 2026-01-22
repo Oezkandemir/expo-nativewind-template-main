@@ -93,8 +93,8 @@ android {
         applicationId 'com.exponativewindtemplate.app'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 8
-        versionName "2.0.3"
+        versionCode 12
+        versionName "2.0.6"
     }
     signingConfigs {
         debug {

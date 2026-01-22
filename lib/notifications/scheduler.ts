@@ -16,6 +16,12 @@ export async function initializeNotifications(): Promise<boolean> {
     // Schedule daily campaign notifications
     await notificationService.scheduleDailyNotifications();
 
+    // Register push token if user is authenticated
+    // This will silently fail if not authenticated (expected on app start)
+    await notificationService.registerPushTokenIfAuthenticated().catch(() => {
+      // Silently fail - token will be registered after login
+    });
+
     return true;
   } catch (error) {
     console.error('Initialize notifications error:', error);

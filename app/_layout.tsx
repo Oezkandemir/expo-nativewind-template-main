@@ -2,11 +2,13 @@ import { AD_SLOTS } from '@/lib/ads/ad-scheduler';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
+import * as Linking from 'expo-linking';
 import * as Notifications from 'expo-notifications';
-import { Stack, useRouter, useSegments } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 import '../global.css';
@@ -20,85 +22,168 @@ import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { RewardProvider } from '@/contexts/RewardContext';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { initializeNotifications } from '@/lib/notifications/scheduler';
+import { supabase } from '@/lib/supabase/client';
+import { setNormal } from '@/lib/utils/status-bar';
 
 // Prevent the splash screen from auto-hiding
-// We'll hide it immediately and show our custom splash instead
 SplashScreen.preventAutoHideAsync();
-
-// Global flag to prevent splash from showing multiple times
-// This persists across component re-mounts (important for Android)
-let hasShownSplash = false;
-let nativeSplashHidden = false;
 
 function RootLayoutNav() {
   const { isAuthenticated, loading: authLoading } = useAuth();
-  const segments = useSegments() as string[];
   const router = useRouter();
-  const [isNavigationReady, setIsNavigationReady] = useState(false);
-  const hasCheckedInitialRoute = useRef(false);
+  const hasNavigated = useRef(false);
+  const hasCheckedNotification = useRef(false);
+  const hasHandledDeepLink = useRef(false);
 
+  // Handle email confirmation deep link
   useEffect(() => {
-    if (authLoading) {
+    if (authLoading || hasHandledDeepLink.current) {
       return;
     }
 
-    // Only check and redirect on initial mount, not on subsequent navigations
-    if (!hasCheckedInitialRoute.current) {
-      const checkAuthAndRedirect = async () => {
-        if (!isAuthenticated) {
-          // Not authenticated - always show onboarding (regardless of onboarding complete flag)
-          if (segments[0] !== '(onboarding)') {
-            router.replace('/(onboarding)/welcome');
-          }
-        } else {
-          // Authenticated - show main app
-          if (segments[0] === '(onboarding)') {
-            // Redirect from onboarding screens to main app
-            const currentScreen = segments[1];
-            // Allow navigation through onboarding flow, but redirect from complete screen
-            if (currentScreen === 'complete') {
-              router.replace('/(tabs)');
+    const handleDeepLink = async (url: string) => {
+      try {
+        // Check if this is an email confirmation callback (spotx://auth/callback)
+        if (url.includes('auth/callback')) {
+          hasHandledDeepLink.current = true;
+          
+          // Supabase email confirmation URLs contain hash fragments
+          // Format: myapp://auth/callback#access_token=...&type=signup&refresh_token=...
+          const hashIndex = url.indexOf('#');
+          if (hashIndex !== -1) {
+            const hashString = url.substring(hashIndex + 1);
+            const hashParams = new URLSearchParams(hashString);
+            const accessToken = hashParams.get('access_token');
+            const refreshToken = hashParams.get('refresh_token');
+            const type = hashParams.get('type');
+            
+            if (accessToken && refreshToken && type === 'signup') {
+              // Set session with Supabase to confirm email
+              const { error: sessionError } = await supabase.auth.setSession({
+                access_token: accessToken,
+                refresh_token: refreshToken,
+              });
+              
+              if (!sessionError) {
+                // Email confirmed successfully, navigate to login screen
+                router.replace('/(auth)/login');
+                return true; // Indicate we handled the deep link
+              } else {
+                console.error('Error setting session from deep link:', sessionError);
+                // Still navigate to login even if session setting failed
+                router.replace('/(auth)/login');
+                return true;
+              }
+            } else {
+              // Hash present but missing required tokens, navigate to login anyway
+              router.replace('/(auth)/login');
+              return true;
             }
-            // Otherwise allow manual navigation (welcome, auth, interests)
-          } else if (segments[0] !== '(tabs)' && segments[0] !== '(auth)') {
-            router.replace('/(tabs)');
+          } else {
+            // No hash fragments, just navigate to login
+            router.replace('/(auth)/login');
+            return true;
           }
         }
-        
-        hasCheckedInitialRoute.current = true;
-        setIsNavigationReady(true);
-      };
+      } catch (error) {
+        console.error('Error handling deep link:', error);
+        // On error, navigate to login screen anyway
+        if (url.includes('auth/callback')) {
+          router.replace('/(auth)/login');
+          return true;
+        }
+      }
+      return false;
+    };
 
-      checkAuthAndRedirect();
-    } else {
-      // After initial check, continuously monitor auth state and redirect if needed
-      if (!isAuthenticated) {
-        // If user logs out or becomes unauthenticated, redirect to onboarding
-        if (segments[0] !== '(onboarding)') {
-          router.replace('/(onboarding)/welcome');
-        }
-      } else {
-        // If user becomes authenticated, redirect to main app (unless already in onboarding flow)
-        if (segments[0] === '(onboarding)') {
-          const currentScreen = segments[1];
-          // Only redirect from complete screen, allow navigation through onboarding
-          if (currentScreen === 'complete') {
-            router.replace('/(tabs)');
+    // Check for initial URL (app opened from deep link)
+    Linking.getInitialURL().then((url) => {
+      if (url) {
+        handleDeepLink(url);
+      }
+    });
+
+    // Listen for deep links while app is running
+    const subscription = Linking.addEventListener('url', (event) => {
+      handleDeepLink(event.url);
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [authLoading, router]);
+
+  // Handle notification navigation
+  useEffect(() => {
+    if (authLoading || hasCheckedNotification.current || hasHandledDeepLink.current) {
+      return;
+    }
+
+    hasCheckedNotification.current = true;
+
+    const checkNotification = async () => {
+      try {
+        const lastResponse = await Notifications.getLastNotificationResponseAsync();
+        if (lastResponse) {
+          const data = lastResponse.notification.request.content.data as {
+            type?: string;
+            slotId?: string;
+            campaignId?: string;
+            autoStart?: boolean;
+          };
+
+          const isAdNotification =
+            data?.autoStart === true ||
+            (data?.type === 'ad_reminder' && data?.slotId) ||
+            data?.type === 'admin_notification' ||
+            !data?.type;
+
+          if (isAdNotification && isAuthenticated) {
+            const slotId = data.slotId || AD_SLOTS[0]?.id || 'slot_1';
+            router.replace({
+              pathname: '/(tabs)/ad-view',
+              params: {
+                slotId,
+                autoStart: data?.autoStart === true || data?.type === 'admin_notification' ? 'true' : 'false',
+                fromNotification: 'true',
+                ...(data.campaignId && { campaignId: data.campaignId }),
+              },
+            });
+            hasNavigated.current = true;
+            return;
           }
-        } else if (segments[0] !== '(tabs)' && segments[0] !== '(auth)') {
+        }
+      } catch (error) {
+        console.error('Error checking notification:', error);
+      }
+
+      // Normal navigation if no notification
+      if (!hasNavigated.current && !hasHandledDeepLink.current) {
+        hasNavigated.current = true;
+        if (!isAuthenticated) {
+          router.replace('/(onboarding)/welcome');
+        } else {
           router.replace('/(tabs)');
         }
       }
-      setIsNavigationReady(true);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated, authLoading]);
+    };
 
-  // Show loading state while auth is loading or navigation isn't ready
-  // This prevents the splash from reappearing
-  if (authLoading || !isNavigationReady) {
-    return null;
-  }
+    checkNotification();
+  }, [authLoading, isAuthenticated, router]);
+
+  // Normal navigation fallback
+  useEffect(() => {
+    if (authLoading || hasNavigated.current || hasHandledDeepLink.current) {
+      return;
+    }
+
+    hasNavigated.current = true;
+    if (!isAuthenticated) {
+      router.replace('/(onboarding)/welcome');
+    } else {
+      router.replace('/(tabs)');
+    }
+  }, [authLoading, isAuthenticated, router]);
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
@@ -110,163 +195,82 @@ function RootLayoutNav() {
   );
 }
 
+function AppContent({ onLayoutRootView }: { onLayoutRootView: () => void }) {
+  const { loading: authLoading } = useAuth();
+  const [navigationReady, setNavigationReady] = useState(false);
+
+  // Mark navigation as ready after auth loads
+  useEffect(() => {
+    if (!authLoading) {
+      const timer = setTimeout(() => {
+        setNavigationReady(true);
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+  }, [authLoading]);
+
+  // Call onLayoutRootView when everything is ready
+  useEffect(() => {
+    if (navigationReady && !authLoading) {
+      onLayoutRootView();
+    }
+  }, [navigationReady, authLoading, onLayoutRootView]);
+
+  return (
+    <View style={{ flex: 1 }} onLayout={navigationReady ? onLayoutRootView : undefined}>
+      <RootLayoutNav />
+    </View>
+  );
+}
+
 export default function RootLayout() {
   const colorScheme = useColorScheme();
-  const router = useRouter();
   const [loaded] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
-  const [showSplash, setShowSplash] = useState(!hasShownSplash);
-  const [openedFromNotification, setOpenedFromNotification] = useState(false);
-  const hasCheckedNotification = useRef(false);
+  const [appIsReady, setAppIsReady] = useState(false);
+  const [splashHidden, setSplashHidden] = useState(false);
+  const appStartTime = useRef(Date.now());
+  const MIN_SPLASH_DURATION = 2000; // Minimum 2 seconds splash screen display
 
-  // Hide native splash immediately on mount and show custom splash
-  // Use global flag to prevent this from running multiple times on Android
+  // Track app start time
   useEffect(() => {
-    const hideNativeSplash = async () => {
-      if (!nativeSplashHidden) {
-        try {
-          await SplashScreen.hideAsync();
-          nativeSplashHidden = true;
-        } catch (e) {
-          // Splash already hidden
-          nativeSplashHidden = true;
-        }
-      }
-    };
-    hideNativeSplash();
+    appStartTime.current = Date.now();
   }, []);
 
-  // Check if app was opened from notification on startup
+  // Prepare app - wait for fonts
   useEffect(() => {
-    const checkNotificationResponse = async () => {
-      if (hasCheckedNotification.current) return;
-      hasCheckedNotification.current = true;
-
-      try {
-        const lastResponse = await Notifications.getLastNotificationResponseAsync();
-        if (lastResponse) {
-          const notificationTime = lastResponse.notification.date;
-          
-          // If no date available, treat as recent notification
-          if (!notificationTime) {
-            const data = lastResponse.notification.request.content.data as {
-              type?: string;
-              slotId?: string;
-              autoStart?: boolean;
-            };
-            
-            // Check if this is an ad notification (autoStart or ad_reminder)
-            if (data?.autoStart || (data?.type === 'ad_reminder' && data?.slotId)) {
-              hasShownSplash = true; // Set global flag immediately
-              setOpenedFromNotification(true);
-              setShowSplash(false);
-
-              const slotId = data.slotId || (() => {
-                const randomIndex = Math.floor(Math.random() * AD_SLOTS.length);
-                return AD_SLOTS[randomIndex]?.id || AD_SLOTS[0]?.id || 'slot_1';
-              })();
-
-              if (loaded) {
-                router.replace({
-                  pathname: '/(tabs)/ad-view',
-                  params: {
-                    slotId,
-                    autoStart: data?.autoStart ? 'true' : 'false',
-                    fromNotification: 'true',
-                  },
-                });
-              }
-              return;
-            }
-            return;
-          }
-          
-          // notificationTime is defined here, calculate time difference
-          const now = Date.now();
-          const notificationTimeValue: number = (() => {
-            const time = notificationTime as Date | number | null | undefined;
-            if (time && typeof time === 'object' && time.constructor === Date) {
-              return (time as Date).getTime();
-            }
-            if (typeof time === 'number') {
-              return time;
-            }
-            return now;
-          })();
-          const timeDiff = now - notificationTimeValue;
-          
-          // Only treat as "opened from notification" if notification was clicked within last 5 seconds
-          if (timeDiff < 5000) {
-            const data = lastResponse.notification.request.content.data as {
-              type?: string;
-              slotId?: string;
-              autoStart?: boolean;
-            };
-
-            // Check if this is an ad notification (autoStart or ad_reminder)
-            if (data?.autoStart || (data?.type === 'ad_reminder' && data?.slotId)) {
-              hasShownSplash = true; // Set global flag immediately
-              setOpenedFromNotification(true);
-              setShowSplash(false);
-
-              const slotId = data.slotId || (() => {
-                const randomIndex = Math.floor(Math.random() * AD_SLOTS.length);
-                return AD_SLOTS[randomIndex]?.id || AD_SLOTS[0]?.id || 'slot_1';
-              })();
-
-              if (loaded) {
-                router.replace({
-                  pathname: '/(tabs)/ad-view',
-                  params: {
-                    slotId,
-                    autoStart: data?.autoStart ? 'true' : 'false',
-                    fromNotification: 'true',
-                  },
-                });
-              }
-              return;
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Error checking notification response:', error);
-      }
-    };
-
-    checkNotificationResponse();
-  }, [router, loaded]);
-
-  // Handle custom splash screen finish
-  const handleSplashFinish = () => {
     if (loaded) {
-      hasShownSplash = true; // Set global flag
-      setShowSplash(false);
-      
-      // Initialize notifications after splash
-      if (!openedFromNotification) {
-        initializeNotifications().catch((error) => {
-          console.error('Failed to initialize notifications:', error);
-        });
-      }
+      setAppIsReady(true);
     }
-  };
+  }, [loaded]);
 
-  // If splash was already shown (e.g., on Android remount), don't show it again
-  // If fonts are loaded but splash animation is still running, keep showing splash
-  // If opened from notification, skip splash entirely
-  if (showSplash && !openedFromNotification && !hasShownSplash) {
-    return <CustomSplashScreen onFinish={handleSplashFinish} />;
-  }
+  // Hide splash screen only after layout is complete AND minimum duration has passed
+  const onLayoutRootView = useCallback(async () => {
+    if (appIsReady && !splashHidden) {
+      // Calculate elapsed time since app start
+      const elapsed = Date.now() - appStartTime.current;
+      const remainingTime = Math.max(0, MIN_SPLASH_DURATION - elapsed);
+      
+      // Wait for minimum splash duration + small delay to ensure navigation is rendered
+      await new Promise((resolve) => setTimeout(resolve, remainingTime + 150));
+      await SplashScreen.hideAsync();
+      setSplashHidden(true);
+      setNormal().catch(() => {});
+      initializeNotifications().catch((error) => {
+        console.error('Failed to initialize notifications:', error);
+      });
+    }
+  }, [appIsReady, splashHidden]);
 
-  // If fonts haven't loaded yet and not showing splash, show nothing (brief moment)
-  if (!loaded) {
-    return null;
+  // Show splash screen until app is ready
+  if (!appIsReady) {
+    return <CustomSplashScreen isLoading={true} />;
   }
 
   return (
     <ErrorBoundary>
-      <GestureHandlerRootView style={{ flex: 1 }}>
+      <GestureHandlerRootView style={{ flex: 1, backgroundColor: '#0F172A' }}>
         <BottomSheetModalProvider>
           <UIThemeProvider>
             <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
@@ -274,8 +278,8 @@ export default function RootLayout() {
                 <AuthProvider>
                   <AdProvider>
                     <RewardProvider>
-                      <RootLayoutNav />
-                      <StatusBar style="light" />
+                      <AppContent onLayoutRootView={onLayoutRootView} />
+                      <StatusBar style="light" translucent backgroundColor="transparent" />
                     </RewardProvider>
                   </AdProvider>
                 </AuthProvider>

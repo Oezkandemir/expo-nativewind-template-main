@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { View, ScrollView, RefreshControl } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { SafeAreaView } from '@/components/ui/safe-area-view';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text } from '@/components/ui/text';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -30,6 +30,7 @@ interface AdViewWithCampaign {
 export default function HistoryScreen() {
   const { user } = useAuth();
   const { getViewsByDateRange } = useAds();
+  const insets = useSafeAreaInsets();
   const [views, setViews] = useState<AdViewWithCampaign[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedRange, setSelectedRange] = useState<TimeRange>(7);
@@ -169,11 +170,12 @@ export default function HistoryScreen() {
   };
 
   return (
-    <SafeAreaView edges={['bottom']} className="flex-1" style={{ backgroundColor: '#0F172A' }}>
+    <View className="flex-1" style={{ backgroundColor: '#0F172A' }}>
       <AppHeader />
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ padding: 16 }}
+        contentContainerStyle={{ padding: 16, paddingBottom: 16 + insets.bottom }}
+        style={{ backgroundColor: '#0F172A' }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
         <Text variant="h1" className="mb-6 text-white">
@@ -260,7 +262,7 @@ export default function HistoryScreen() {
           </CardContent>
         </Card>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 

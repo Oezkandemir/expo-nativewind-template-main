@@ -134,12 +134,12 @@ export function HistoryWidget({ className }: HistoryWidgetProps) {
   };
 
   return (
-    <Card className={cn('mb-4', className)} style={{ borderWidth: 1, borderColor: 'rgba(139, 92, 246, 0.2)' }}>
+    <Card className={cn('mb-4', className)} style={{ backgroundColor: '#1E293B', borderWidth: 1, borderColor: 'rgba(139, 92, 246, 0.2)' }}>
       <CardHeader className="pb-3">
         <CardTitle>
           <View className="flex-row items-center gap-2">
             <Text className="text-lg">📜</Text>
-            <Text variant="h3" className="font-semibold text-purple-600 dark:text-purple-400">
+            <Text variant="h3" className="font-semibold text-purple-400">
               Kampagnen-Historie
             </Text>
           </View>
@@ -149,26 +149,43 @@ export function HistoryWidget({ className }: HistoryWidgetProps) {
         {/* Tabs */}
         <View className="flex-row gap-2 mb-4">
           {([7, 30, 90] as TimeRange[]).map((range) => (
-            <Pressable
-              key={range}
-              onPress={() => setSelectedRange(range)}
-              className={cn(
-                'flex-1 py-2 px-2 rounded-lg border',
-                selectedRange === range
-                  ? 'bg-purple-500 border-purple-500'
-                  : 'bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-700'
-              )}
-            >
-              <Text
-                variant="small"
-                className={cn(
-                  'text-center font-semibold',
-                  selectedRange === range ? 'text-white' : 'text-gray-700 dark:text-gray-300'
-                )}
+              <Pressable
+                key={range}
+                onPress={() => setSelectedRange(range)}
+                style={[
+                  {
+                    flex: 1,
+                    paddingVertical: 8,
+                    paddingHorizontal: 8,
+                    borderRadius: 8,
+                    borderWidth: 1,
+                  },
+                  selectedRange === range
+                    ? {
+                        backgroundColor: '#8B5CF6',
+                        borderColor: '#8B5CF6',
+                      }
+                    : {
+                        backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                        borderColor: 'rgba(139, 92, 246, 0.3)',
+                      },
+                ]}
               >
-                {getRangeLabel(range)}
-              </Text>
-            </Pressable>
+                <Text
+                  variant="small"
+                  style={[
+                    {
+                      textAlign: 'center',
+                      fontWeight: '600',
+                    },
+                    selectedRange === range
+                      ? { color: '#FFFFFF' }
+                      : { color: '#A78BFA' },
+                  ]}
+                >
+                  {getRangeLabel(range)}
+                </Text>
+              </Pressable>
           ))}
         </View>
 
@@ -176,7 +193,7 @@ export function HistoryWidget({ className }: HistoryWidgetProps) {
         {loading ? (
           <View className="py-8 items-center justify-center">
             <ActivityIndicator size="small" color="#8B5CF6" />
-            <Text variant="small" className="text-muted-foreground mt-2">
+            <Text variant="small" className="text-gray-400 mt-2">
               Lade Historie...
             </Text>
           </View>
@@ -195,18 +212,18 @@ export function HistoryWidget({ className }: HistoryWidgetProps) {
                   }}
                 >
                   <View className="flex-1 mr-2">
-                    <Text variant="p" className="font-semibold text-sm" numberOfLines={1}>
+                    <Text variant="p" className="font-semibold text-sm text-white" numberOfLines={1}>
                       {campaignName}
                     </Text>
-                    <Text variant="small" className="text-muted-foreground text-xs" numberOfLines={1}>
+                    <Text variant="small" className="text-gray-400 text-xs" numberOfLines={1}>
                       {view.adId.substring(0, 8)}
                     </Text>
-                    <Text variant="small" className="text-muted-foreground text-xs mt-0.5">
+                    <Text variant="small" className="text-gray-400 text-xs mt-0.5">
                       {formatDateTime(view.watchedAt)}
                     </Text>
                   </View>
                   <View className="items-end">
-                    <Text variant="small" className="font-bold text-purple-600 dark:text-purple-400">
+                    <Text variant="small" className="font-bold text-purple-400">
                       {formatCurrency(view.rewardEarned)}
                     </Text>
                     {view.verified && (
@@ -214,7 +231,7 @@ export function HistoryWidget({ className }: HistoryWidgetProps) {
                         className="mt-1 px-2 py-0.5 rounded-full"
                         style={{ backgroundColor: 'rgba(34, 197, 94, 0.2)' }}
                       >
-                        <Text variant="small" className="text-green-600 dark:text-green-400 text-xs">
+                        <Text variant="small" className="text-green-400 text-xs">
                           ✓
                         </Text>
                       </View>
@@ -227,7 +244,7 @@ export function HistoryWidget({ className }: HistoryWidgetProps) {
         ) : (
           <View className="py-6 items-center justify-center">
             <Text className="text-2xl mb-2">📭</Text>
-            <Text variant="small" className="text-muted-foreground text-center">
+            <Text variant="small" className="text-gray-400 text-center">
               Keine Kampagnen in diesem Zeitraum
             </Text>
           </View>

@@ -52,8 +52,14 @@ Für die mobile App müssen Sie die Redirect-URLs konfigurieren:
 1. Gehe zu **Authentication** → **URL Configuration**
 2. Füge hinzu unter **Redirect URLs**:
    ```
-   exp://localhost:8081/--/(auth)/login
    spotx://auth/callback
+   ```
+   
+   **Wichtig:** Diese URL öffnet die App direkt, wenn der Benutzer auf den Bestätigungslink in der E-Mail klickt. Die App navigiert automatisch zum Login-Screen nach erfolgreicher Bestätigung.
+
+   **Für Development (optional):**
+   ```
+   exp://localhost:8081/--/auth/callback
    ```
 
 ## 📱 User Flow

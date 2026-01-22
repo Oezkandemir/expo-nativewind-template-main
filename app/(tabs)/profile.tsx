@@ -1,5 +1,5 @@
 import { View, ScrollView, Pressable, Animated, Easing } from 'react-native';
-import { SafeAreaView } from '@/components/ui/safe-area-view';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text } from '@/components/ui/text';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,7 +17,6 @@ import { iconWithClassName } from '@/components/ui/lib/icons/icon-with-classname
 import { formatCurrency } from '@/lib/rewards/reward-calculator';
 import { useEffect, useRef, useState } from 'react';
 import { useToast } from '@/components/ui/toast';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useWindowDimensions } from 'react-native';
 
 const INTEREST_CATEGORIES = [
@@ -160,7 +159,7 @@ export default function ProfileScreen() {
   };
 
   return (
-    <SafeAreaView edges={['bottom']} className="flex-1" style={{ backgroundColor: '#0F172A' }}>
+    <View className="flex-1" style={{ backgroundColor: '#0F172A' }}>
       <AppHeader />
       <Animated.View 
         className="flex-1"
@@ -169,7 +168,7 @@ export default function ProfileScreen() {
           transform: [{ translateY: slideAnim }],
         }}
       >
-        <ScrollView className="flex-1" contentContainerStyle={{ padding: 16 }}>
+        <ScrollView className="flex-1" contentContainerStyle={{ padding: 16, paddingBottom: 16 + insets.bottom }} style={{ backgroundColor: '#0F172A' }}>
           <View className="mb-6">
             <Text variant="h1" className="mb-2 font-bold text-white">
               Profil
@@ -603,7 +602,7 @@ export default function ProfileScreen() {
         </Button>
         </ScrollView>
       </Animated.View>
-    </SafeAreaView>
+    </View>
   );
 }
 

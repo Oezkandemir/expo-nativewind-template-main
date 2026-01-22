@@ -6,6 +6,7 @@ import Animated, {
     useAnimatedStyle,
     useSharedValue,
     withDelay,
+    withRepeat,
     withTiming,
 } from 'react-native-reanimated';
 import { Text } from './text';
@@ -44,15 +45,20 @@ export function Logo({ size = 'medium', showAnimation = false, className, varian
 
   useEffect(() => {
     if (showAnimation) {
-      rotation.value = withDelay(
-        400,
+      // Continuous rotation animation (spinner effect)
+      rotation.value = withRepeat(
         withTiming(360, {
-          duration: 800,
-          easing: Easing.out(Easing.cubic),
-        })
+          duration: 1000,
+          easing: Easing.linear,
+        }),
+        -1, // Infinite repeat
+        false // Don't reverse
       );
+    } else {
+      // Reset rotation when animation is disabled
+      rotation.value = 0;
     }
-  }, [showAnimation]);
+  }, [showAnimation, rotation]);
 
   const iconStyle = useAnimatedStyle(() => ({
     transform: [{ rotate: `${rotation.value}deg` }],

@@ -1,6 +1,8 @@
 import * as Notifications from 'expo-notifications';
-import { Platform } from 'react-native';
+import { Platform, AppState } from 'react-native';
+import Constants from 'expo-constants';
 import { AD_SLOTS } from '@/lib/ads/ad-scheduler';
+import { supabase } from '@/lib/supabase/client';
 
 const { SchedulableTriggerInputTypes } = Notifications;
 
@@ -24,6 +26,12 @@ class NotificationService {
    */
   async requestPermissions(): Promise<boolean> {
     try {
+      // Ensure runtime is ready before accessing native modules
+      if (typeof Notifications === 'undefined' || !Notifications.getPermissionsAsync) {
+        console.warn('Notifications module not ready');
+        return false;
+      }
+
       const { status: existingStatus } = await Notifications.getPermissionsAsync();
       let finalStatus = existingStatus;
 
@@ -51,6 +59,7 @@ class NotificationService {
       }
 
       // Register for push notifications and send token to backend
+      // Only register if user is authenticated (to avoid 401 errors)
       // On Android, skip if Firebase is not initialized (common in development)
       // On iOS, try to get token (works without Firebase)
       if (Platform.OS === 'ios' || Platform.OS === 'web') {
@@ -60,8 +69,13 @@ class NotificationService {
           });
           console.log('Push notification token:', token.data);
           
-          // Send token to backend for remote push notifications
-          await this.registerPushToken(token.data, Platform.OS);
+          // Only send token to backend if user is authenticated
+          const authHeaders = await this.getAuthHeaders();
+          if (authHeaders['Authorization']) {
+            await this.registerPushToken(token.data, Platform.OS);
+          } else {
+            console.log('User not authenticated, skipping push token registration. Will retry after login.');
+          }
         } catch (error: any) {
           // Only log if it's not a Firebase initialization error
           if (!error?.message?.includes('FirebaseApp') && !error?.message?.includes('Firebase')) {
@@ -78,8 +92,13 @@ class NotificationService {
           });
           console.log('Push notification token:', token.data);
           
-          // Send token to backend for remote push notifications
-          await this.registerPushToken(token.data, Platform.OS);
+          // Only send token to backend if user is authenticated
+          const authHeaders = await this.getAuthHeaders();
+          if (authHeaders['Authorization']) {
+            await this.registerPushToken(token.data, Platform.OS);
+          } else {
+            console.log('User not authenticated, skipping push token registration. Will retry after login.');
+          }
         } catch (error: any) {
           // Silently ignore Firebase errors on Android (expected in dev without Firebase)
           // Only log other errors
@@ -94,6 +113,37 @@ class NotificationService {
     } catch (error) {
       console.error('Request notification permissions error:', error);
       return false;
+    }
+  }
+
+  /**
+   * Register push token with backend (only if authenticated)
+   * This should be called after user logs in
+   */
+  async registerPushTokenIfAuthenticated(): Promise<void> {
+    try {
+      // Check if user is authenticated first
+      const authHeaders = await this.getAuthHeaders();
+      if (!authHeaders['Authorization']) {
+        console.log('User not authenticated, skipping push token registration.');
+        return;
+      }
+
+      // Get push token
+      const token = await Notifications.getExpoPushTokenAsync({
+        projectId: '8ddfb1eb-b6c2-44dc-ad88-00e4652e956c',
+      });
+      
+      console.log('Push notification token:', token.data);
+      
+      // Register token with backend
+      await this.registerPushToken(token.data, Platform.OS);
+    } catch (error: any) {
+      // Only log if it's not a Firebase initialization error
+      if (!error?.message?.includes('FirebaseApp') && !error?.message?.includes('Firebase')) {
+        console.warn('Could not register push token:', error);
+      }
+      // Don't throw - app should continue working
     }
   }
 
@@ -113,13 +163,11 @@ class NotificationService {
         // Try to get network IP from Expo Constants
         // For Android, we MUST use network IP, not localhost
         try {
-          const Constants = require('expo-constants');
           const manifest = Constants.expoConfig || Constants.manifest;
           
           // Try to extract IP from Expo's dev server info
           // Common pattern: Expo shows "Network: http://192.168.0.163:3000"
           // We'll try to use a common development IP or detect platform
-          const Platform = require('react-native').Platform;
           
           if (Platform.OS === 'android') {
             // Android MUST use network IP - try common development IPs
@@ -205,8 +253,12 @@ class NotificationService {
    */
   private async getAuthHeaders(): Promise<Record<string, string>> {
     try {
+      // Ensure supabase is available before accessing
+      if (!supabase || !supabase.auth) {
+        return {};
+      }
+
       // Try to get auth token from Supabase
-      const { supabase } = require('@/lib/supabase/client');
       const { data: { session } } = await supabase.auth.getSession();
       
       if (session?.access_token) {
@@ -216,6 +268,7 @@ class NotificationService {
       }
     } catch (error) {
       // Auth not available, continue without headers
+      // Silently fail - app should work without auth headers
     }
     return {};
   }
@@ -403,6 +456,11 @@ class NotificationService {
         }
       }
 
+      // Prüfe ob App aktiv ist beim Senden der Notification
+      // Wenn App aktiv ist, war User bereits in der App → fromNotification sollte false sein
+      const appState = AppState.currentState;
+      const isAppActive = appState === 'active';
+      
       // Send immediate notification (no delay for reliability)
       // The random channel will still vary the position/priority
       const notificationId = await Notifications.scheduleNotificationAsync({
@@ -412,6 +470,7 @@ class NotificationService {
           data: {
             ...data,
             autoStart: true, // Flag to auto-start the ad
+            appWasActive: isAppActive, // Flag: true wenn App aktiv war beim Senden
           },
           sound: true,
           ...(Platform.OS === 'android' && channelId && { channelId }), // Only set channelId on Android if available

@@ -14,6 +14,12 @@ const Input = React.forwardRef<
     textAlignVertical: 'center' as const,
   } : {};
 
+  // iOS-specific fixes for simulator bugs
+  const iosStyles = Platform.OS === 'ios' ? {
+    // Prevent layout jumps and cursor lag
+    textAlignVertical: 'center' as const,
+  } : {};
+
   return (
     <TextInput
       ref={ref}
@@ -29,7 +35,11 @@ const Input = React.forwardRef<
       placeholderTextColor="#9ca3af"
       selectionColor="#6366f1"
       underlineColorAndroid="transparent"
-      style={[androidStyles, style]}
+      // iOS fixes: prevent autocorrect/prediction lag and layout jumps
+      spellCheck={props.spellCheck !== undefined ? props.spellCheck : false}
+      autoCorrect={props.autoCorrect !== undefined ? props.autoCorrect : false}
+      clearButtonMode="while-editing"
+      style={[androidStyles, iosStyles, style]}
       {...props}
     />
   );

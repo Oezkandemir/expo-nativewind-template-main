@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { iconWithClassName } from '@/components/ui/lib/icons/icon-with-classname';
-import { SafeAreaView } from '@/components/ui/safe-area-view';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Switch } from '@/components/ui/switch';
 import { Text } from '@/components/ui/text';
 import { useToast } from '@/components/ui/toast';
@@ -20,6 +20,7 @@ export default function SettingsScreen() {
   const { user, updateUser } = useAuth();
   const { hasPermission, requestPermissions } = useNotifications();
   const { showToast } = useToast();
+  const insets = useSafeAreaInsets();
   const [notificationsEnabled, setNotificationsEnabled] = useState(
     user?.preferences.notificationsEnabled || false
   );
@@ -87,7 +88,7 @@ export default function SettingsScreen() {
   };
 
   return (
-    <SafeAreaView edges={['bottom']} className="flex-1" style={{ backgroundColor: '#0F172A' }}>
+    <View className="flex-1" style={{ backgroundColor: '#0F172A' }}>
       <AppHeader />
       <Animated.View 
         className="flex-1"
@@ -96,7 +97,7 @@ export default function SettingsScreen() {
           transform: [{ translateY: slideAnim }],
         }}
       >
-        <ScrollView className="flex-1" contentContainerStyle={{ padding: 16 }}>
+        <ScrollView className="flex-1" contentContainerStyle={{ padding: 16, paddingBottom: 16 + insets.bottom }} style={{ backgroundColor: '#0F172A' }}>
           <View className="mb-6">
             <Text variant="h1" className="mb-2 font-bold text-white">
               Einstellungen
@@ -245,7 +246,7 @@ export default function SettingsScreen() {
         </Card>
         </ScrollView>
       </Animated.View>
-    </SafeAreaView>
+    </View>
   );
 }
 

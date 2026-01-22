@@ -69,30 +69,45 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   const getIcon = (type: ToastType) => {
     switch (type) {
       case 'success':
-        return <ThumbsUpIcon className="h-12 w-12 text-green-500" />;
+        return <ThumbsUpIcon className="h-6 w-6 text-white" />;
       case 'error':
-        return <XCircleIcon className="h-5 w-5 text-red-500" />;
+        return <XCircleIcon className="h-5 w-5 text-white" />;
       case 'warning':
-        return <AlertCircleIcon className="h-5 w-5 text-yellow-500" />;
+        return <AlertCircleIcon className="h-5 w-5 text-white" />;
       case 'info':
-        return <InfoIcon className="h-5 w-5 text-blue-500" />;
+        return <InfoIcon className="h-5 w-5 text-white" />;
       default:
-        return <ThumbsUpIcon className="h-12 w-12 text-green-500" />;
+        return <ThumbsUpIcon className="h-6 w-6 text-white" />;
     }
   };
 
   const getBackgroundColor = (type: ToastType) => {
     switch (type) {
       case 'success':
-        return 'bg-green-500/10 border-green-500/20';
+        return 'bg-green-600/95 border-green-400';
       case 'error':
-        return 'bg-red-500/10 border-red-500/20';
+        return 'bg-red-600/95 border-red-400';
       case 'warning':
-        return 'bg-yellow-500/10 border-yellow-500/20';
+        return 'bg-yellow-600/95 border-yellow-400';
       case 'info':
-        return 'bg-blue-500/10 border-blue-500/20';
+        return 'bg-blue-600/95 border-blue-400';
       default:
-        return 'bg-green-500/10 border-green-500/20';
+        return 'bg-green-600/95 border-green-400';
+    }
+  };
+
+  const getTextColor = (type: ToastType) => {
+    switch (type) {
+      case 'success':
+        return 'text-white';
+      case 'error':
+        return 'text-white';
+      case 'warning':
+        return 'text-white';
+      case 'info':
+        return 'text-white';
+      default:
+        return 'text-white';
     }
   };
 
@@ -100,7 +115,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     <ToastContext.Provider value={{ showToast }}>
       {children}
       <View
-        className="absolute top-12 left-0 right-0 px-4 z-50 pointer-events-none"
+        className="absolute bottom-24 left-0 right-0 px-4 z-50 pointer-events-none"
         style={{ pointerEvents: 'box-none' }}
       >
         {toasts.map((toast) => {
@@ -111,7 +126,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                   {
                     translateY: fadeAnim.current[toast.id].interpolate({
                       inputRange: [0, 1],
-                      outputRange: [-20, 0],
+                      outputRange: [20, 0],
                     }),
                   },
                 ],
@@ -131,33 +146,47 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
               ]}
               className={cn(
                 'mb-3',
-                isSuccessToast ? 'ml-auto mr-4 w-5/6 max-w-lg' : 'mx-auto w-full max-w-md',
+                'mx-auto w-[85%] max-w-xs',
                 Platform.select({
-                  ios: 'shadow-lg shadow-foreground/25',
-                  android: 'elevation-8',
+                  ios: 'shadow-2xl shadow-black/40',
+                  android: 'elevation-12',
                 })
               )}
             >
               <View
                 className={cn(
                   isSuccessToast 
-                    ? 'items-center px-6 py-5 rounded-xl border' 
-                    : 'flex-row items-center px-4 py-3 rounded-lg border',
-                  'bg-background/95 backdrop-blur-sm',
+                    ? 'items-center px-5 py-4 rounded-2xl border-2' 
+                    : 'flex-row items-center px-4 py-4 rounded-xl border-2',
+                  'min-h-[56px]',
                   getBackgroundColor(toast.type || 'success')
                 )}
               >
                 {isSuccessToast ? (
                   <>
                     {getIcon(toast.type || 'success')}
-                    <Text className="mt-3 text-center text-foreground font-semibold text-xl">
+                    <Text 
+                      className={cn(
+                        'mt-2.5 text-center font-bold text-base leading-6',
+                        getTextColor(toast.type || 'success')
+                      )}
+                      numberOfLines={3}
+                    >
                       {toast.message}
                     </Text>
                   </>
                 ) : (
                   <>
-                    {getIcon(toast.type || 'success')}
-                    <Text className="ml-3 flex-1 text-foreground font-medium">
+                    <View className="flex-shrink-0">
+                      {getIcon(toast.type || 'success')}
+                    </View>
+                    <Text 
+                      className={cn(
+                        'ml-3 flex-1 font-bold text-sm leading-5',
+                        getTextColor(toast.type || 'success')
+                      )}
+                      numberOfLines={2}
+                    >
                       {toast.message}
                     </Text>
                   </>

@@ -1,5 +1,5 @@
 import { View, ScrollView, Animated, Easing, RefreshControl } from 'react-native';
-import { SafeAreaView } from '@/components/ui/safe-area-view';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text } from '@/components/ui/text';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useNotifications } from '@/hooks/useNotifications';
@@ -22,6 +22,7 @@ export default function NotificationsScreen() {
   const { showToast } = useToast();
   const { receivedNotifications, getRecentNotifications, clearReceivedNotifications, removeDuplicates } = useNotificationStore();
   const [refreshing, setRefreshing] = useState(false);
+  const insets = useSafeAreaInsets();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(20)).current;
 
@@ -131,7 +132,7 @@ export default function NotificationsScreen() {
   };
 
   return (
-    <SafeAreaView edges={['bottom']} className="flex-1" style={{ backgroundColor: '#0F172A' }}>
+    <View className="flex-1" style={{ backgroundColor: '#0F172A' }}>
       <AppHeader />
       <Animated.View
         className="flex-1"
@@ -142,7 +143,8 @@ export default function NotificationsScreen() {
       >
         <ScrollView 
           className="flex-1" 
-          contentContainerStyle={{ padding: 16 }}
+          contentContainerStyle={{ padding: 16, paddingBottom: 16 + insets.bottom }}
+          style={{ backgroundColor: '#0F172A' }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         >
           <View className="mb-6">
@@ -314,7 +316,7 @@ export default function NotificationsScreen() {
           </Card>
         </ScrollView>
       </Animated.View>
-    </SafeAreaView>
+    </View>
   );
 }
 

@@ -2,10 +2,10 @@
   "expo": {
     "name": "spot-x",
     "slug": "spotx",
-    "version": "2.0.3",
+    "version": "2.0.6",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
-    "scheme": "myapp",
+    "icon": "./assets/images/iconbgremoved.png",
+    "scheme": "spotx",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
@@ -14,7 +14,7 @@
       "backgroundColor": "#0F172A"
     },
     "ios": {
-      "icon": "./assets/images/icon.png",
+      "icon": "./assets/images/iconbgremoved.png",
       "supportsTablet": true,
       "infoPlist": {
         "CFBundleIconName": "AppIcon",
@@ -26,12 +26,15 @@
         "NSUserTrackingUsageDescription": "This app needs permission to track your activity across other apps and websites.",
         "ITSAppUsesNonExemptEncryption": false
       },
+      "entitlements": {
+        "aps-environment": "development"
+      },
       "bundleIdentifier": "com.exponativewindtemplate.app",
       "buildNumber": "4"
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/icon.png",
+        "foregroundImage": "./assets/images/iconbgremoved.png",
         "backgroundColor": "#1D212A"
       },
       "edgeToEdgeEnabled": true,
@@ -49,7 +52,7 @@
       ],
 
       "googleServicesFile": "./google-services.json",
-      "versionCode": 8
+      "versionCode": 12
     },
     "web": {
       "bundler": "metro",
@@ -71,7 +74,7 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/images/icon.png",
+          "icon": "./assets/images/iconbgremoved.png",
           "color": "#ffffff",
           "sounds": [],
           "mode": "default",

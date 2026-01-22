@@ -17,6 +17,10 @@ class SupabaseAuthService {
       const defaultName = emailPrefix || 'User';
       
       // Sign up with Supabase Auth
+      // Use app deep link scheme for email confirmation redirect
+      // This will open the app when user clicks confirmation link in email
+      const emailRedirectTo = 'spotx://auth/callback';
+      
       const { data: authData, error: signUpError } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
@@ -24,8 +28,8 @@ class SupabaseAuthService {
           data: {
             name: data.name || defaultName,
           },
-          // Email confirmation required by default
-          emailRedirectTo: undefined, // Will use default redirect URL
+          // Email confirmation redirects to app deep link
+          emailRedirectTo: emailRedirectTo,
         },
       });
 

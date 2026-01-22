@@ -158,7 +158,10 @@ export async function POST(request: Request) {
       body: notificationBody,
       data: {
         campaignId: campaignId || null,
-        type: 'admin_notification',
+        // If campaignId is provided, set autoStart to true so the app opens the campaign screen
+        // Otherwise, it's just a regular admin notification
+        autoStart: campaignId ? true : undefined,
+        type: campaignId ? 'campaign' : 'admin_notification',
         timestamp: new Date().toISOString(),
       },
       badge: 1,

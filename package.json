@@ -1,7 +1,7 @@
 {
   "name": "expo-nativewind-template",
   "main": "expo-router/entry",
-  "version": "2.0.3",
+  "version": "2.0.6",
   "description": "A production-ready Expo template with NativeWind, TypeScript, and 20+ pre-built UI components",
   "author": "Krishna Kumar",
   "license": "MIT",
@@ -93,6 +93,7 @@
     "expo-network": "~7.1.5",
     "expo-notifications": "^0.31.4",
     "expo-router": "~5.1.10",
+    "expo-server-sdk": "^4.0.0",
     "expo-splash-screen": "~0.30.10",
     "expo-status-bar": "~2.2.3",
     "expo-symbols": "~0.4.5",

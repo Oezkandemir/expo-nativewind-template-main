@@ -1,6 +1,6 @@
 import { View, ScrollView, RefreshControl } from 'react-native';
 import { useState, useEffect } from 'react';
-import { SafeAreaView } from '@/components/ui/safe-area-view';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text } from '@/components/ui/text';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/hooks/useAuth';
@@ -12,6 +12,7 @@ import { AppHeader } from '@/components/ui/app-header';
 export default function StatisticsScreen() {
   const { user } = useAuth();
   const { summary } = useRewards();
+  const insets = useSafeAreaInsets();
   const [stats, setStats] = useState({
     totalViews: 0,
     todayViews: 0,
@@ -49,11 +50,12 @@ export default function StatisticsScreen() {
   };
 
   return (
-    <SafeAreaView edges={['bottom']} className="flex-1" style={{ backgroundColor: '#0F172A' }}>
+    <View className="flex-1" style={{ backgroundColor: '#0F172A' }}>
       <AppHeader />
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ padding: 16 }}
+        contentContainerStyle={{ padding: 16, paddingBottom: 16 + insets.bottom }}
+        style={{ backgroundColor: '#0F172A' }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
         <Text variant="h1" className="mb-6 text-white">
@@ -154,7 +156,7 @@ export default function StatisticsScreen() {
           )}
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 

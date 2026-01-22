@@ -9,8 +9,9 @@ import { BlurView } from 'expo-blur';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Sparkles, X } from 'lucide-react-native';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Animated, BackHandler, Dimensions, Easing, Image, Platform, Pressable, StatusBar, View } from 'react-native';
+import { Animated, BackHandler, Dimensions, Easing, Image, Platform, Pressable, StatusBar, View, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function AdViewScreen() {
   const params = useLocalSearchParams();
@@ -19,7 +20,8 @@ export default function AdViewScreen() {
   const fromNotification = params.fromNotification === 'true';
   const insets = useSafeAreaInsets();
 
-  const { getAdForSlot, completeAdView, currentAd } = useAds();
+  const { isAuthenticated, loading: authLoading } = useAuth();
+  const { getAdForSlot, completeAdView, currentAd, loading: adsLoading } = useAds();
   const { refreshSummary } = useRewards();
   const { showToast } = useToast();
   const [ad, setAd] = useState(currentAd);
@@ -32,9 +34,14 @@ export default function AdViewScreen() {
   const [isClosing, setIsClosing] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showBlurOverlay, setShowBlurOverlay] = useState(false);
+  const [closeRequested, setCloseRequested] = useState(false); // Vormerkung für X-Klick
+  const [isLoadingAd, setIsLoadingAd] = useState(true);
+  const [loadTimeout, setLoadTimeout] = useState(false);
+  const closeRequestedRef = useRef(false); // Ref für Closure-Problem
   const secondsRemainingRef = useRef(5);
   const executeCloseRef = useRef<(() => Promise<void>) | null>(null);
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const loadAdTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   // Animation values - must be declared before any early returns
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -43,7 +50,6 @@ export default function AdViewScreen() {
   const timerScaleAnim = useRef(new Animated.Value(1)).current;
   const closeButtonAnim = useRef(new Animated.Value(0)).current;
   const progressAnim = useRef(new Animated.Value(0)).current;
-  const spinAnim = useRef(new Animated.Value(0)).current;
   
   // Success modal animations
   const modalFadeAnim = useRef(new Animated.Value(0)).current;
@@ -52,40 +58,61 @@ export default function AdViewScreen() {
   const modalIconRotateAnim = useRef(new Animated.Value(0)).current;
   const blurOverlayAnim = useRef(new Animated.Value(0)).current;
 
+  // Wait for auth and ads context to be ready before loading ad
   useEffect(() => {
-    loadAd();
-    // Smooth animate in on mount
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 500,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-      Animated.spring(scaleAnim, {
-        toValue: 1,
-        tension: 40,
-        friction: 8,
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 500,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-    ]).start();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [paramSlotId]);
+    // If auth is still loading or user is not authenticated, wait
+    if (authLoading || !isAuthenticated) {
+      return;
+    }
 
-  // Auto-start ad if coming from notification
+    // If ads context is still loading, wait
+    if (adsLoading) {
+      return;
+    }
+
+    // Set timeout for loading (3 seconds)
+    loadAdTimeoutRef.current = setTimeout(() => {
+      if (isLoadingAd && !ad) {
+        setLoadTimeout(true);
+        setIsLoadingAd(false);
+        showToast('Kampagne konnte nicht geladen werden', 'error', 3000);
+        setTimeout(() => {
+          if (fromNotification) {
+            // If opened from notification, close app
+            if (Platform.OS === 'android') {
+              BackHandler.exitApp();
+            } else {
+              router.replace('/(tabs)');
+            }
+          } else {
+            router.back();
+          }
+        }, 2000);
+      }
+    }, 3000) as any;
+
+    // Load ad once contexts are ready
+    loadAd();
+    
+    // No animation - set immediately to final state for instant display
+    fadeAnim.setValue(1);
+    scaleAnim.setValue(1);
+    slideAnim.setValue(0);
+
+    return () => {
+      if (loadAdTimeoutRef.current) {
+        clearTimeout(loadAdTimeoutRef.current);
+        loadAdTimeoutRef.current = null;
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paramSlotId, authLoading, isAuthenticated, adsLoading]);
+
+  // Auto-start ad if coming from notification - start immediately, no delay
   useEffect(() => {
     if (autoStart && ad && !isWatching) {
-      // Small delay to ensure ad is loaded
-      const timer = setTimeout(() => {
-        handleStartWatching();
-      }, 500);
-      return () => clearTimeout(timer);
+      // Start immediately, no delay
+      handleStartWatching();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ad, autoStart]);
@@ -150,11 +177,19 @@ export default function AdViewScreen() {
             }).start();
           }
           
-          // Stop timer at 0 but don't auto-close - user must click X to close
-          // No automatic closing - user must manually click the X button
+          // Stop timer at 0
           if (newValue === 0 && timerIntervalRef.current) {
             clearInterval(timerIntervalRef.current);
             timerIntervalRef.current = null;
+            
+            // Timer ist zu Ende - X-Button sollte bereits sichtbar sein (ab 3 Sekunden)
+            // User MUSS auf X klicken um fortzufahren
+            // Wenn X bereits geklickt wurde, zeige Belohnung und schließe nach 2 Sekunden
+            if ((closeRequested || closeRequestedRef.current) && executeCloseRef.current) {
+              // X wurde bereits geklickt → zeige Belohnung und schließe
+              executeCloseRef.current();
+            }
+            // Wenn X noch nicht geklickt wurde, warte auf X-Klick (X-Button ist bereits sichtbar)
           }
           
           return newValue;
@@ -170,31 +205,91 @@ export default function AdViewScreen() {
         }
       };
     }
-  }, [isWatching, secondsRemaining, progressAnim, timerScaleAnim, closeButtonAnim, isClosing, executeCloseRef]);
+  }, [isWatching, secondsRemaining, progressAnim, timerScaleAnim, closeButtonAnim, isClosing, executeCloseRef, closeRequested, fromNotification]);
 
   const loadAd = async () => {
+    // Check if user is authenticated before loading ad
+    if (!isAuthenticated) {
+      console.warn('[AdView] User not authenticated, cannot load ad');
+      setIsLoadingAd(false);
+      showToast('Bitte melden Sie sich an', 'error', 3000);
+      setTimeout(() => {
+        router.replace('/(onboarding)/welcome');
+      }, 2000);
+      return;
+    }
+
+    setIsLoadingAd(true);
+    setLoadTimeout(false);
+
+    // Clear timeout if ad loads successfully
+    if (loadAdTimeoutRef.current) {
+      clearTimeout(loadAdTimeoutRef.current);
+      loadAdTimeoutRef.current = null;
+    }
+
     let targetSlotId = slotId;
 
     if (!targetSlotId) {
       // Try to get current active slot
       const activeSlot = getCurrentActiveSlot();
       if (!activeSlot) {
+        setIsLoadingAd(false);
         showToast('Es ist aktuell kein Kampagnen-Zeitfenster aktiv', 'info', 3000);
-        setTimeout(() => router.back(), 1000);
+        setTimeout(() => {
+          if (fromNotification) {
+            if (Platform.OS === 'android') {
+              BackHandler.exitApp();
+            } else {
+              router.replace('/(tabs)');
+            }
+          } else {
+            router.back();
+          }
+        }, 2000);
         return;
       }
       targetSlotId = activeSlot.id;
       setSlotId(targetSlotId);
     }
 
-    const loadedAd = await getAdForSlot(targetSlotId);
-    if (!loadedAd) {
-      // No ad available - show message and go back
-      showToast('Keine Kampagne verfügbar', 'info', 3000);
-      setTimeout(() => router.back(), 1000);
-      return;
+    try {
+      const loadedAd = await getAdForSlot(targetSlotId);
+      if (!loadedAd) {
+        // No ad available - show message and go back
+        setIsLoadingAd(false);
+        showToast('Keine Kampagne verfügbar', 'info', 3000);
+        setTimeout(() => {
+          if (fromNotification) {
+            if (Platform.OS === 'android') {
+              BackHandler.exitApp();
+            } else {
+              router.replace('/(tabs)');
+            }
+          } else {
+            router.back();
+          }
+        }, 2000);
+        return;
+      }
+      setAd(loadedAd);
+      setIsLoadingAd(false);
+    } catch (error) {
+      console.error('[AdView] Error loading ad:', error);
+      setIsLoadingAd(false);
+      showToast('Fehler beim Laden der Kampagne', 'error', 3000);
+      setTimeout(() => {
+        if (fromNotification) {
+          if (Platform.OS === 'android') {
+            BackHandler.exitApp();
+          } else {
+            router.replace('/(tabs)');
+          }
+        } else {
+          router.back();
+        }
+      }, 2000);
     }
-    setAd(loadedAd);
   };
 
   const handleStartWatching = () => {
@@ -237,10 +332,14 @@ export default function AdViewScreen() {
   const executeClose = useCallback(async () => {
     if (!ad || !slotId) return;
     
-    // Prevent multiple calls
-    if (isClosing && secondsRemainingRef.current > 0) {
+    // Prevent multiple calls - nur wenn bereits geschlossen wird
+    if (isClosing) {
       return;
     }
+    
+    // Setze isClosing, damit nicht mehrfach aufgerufen wird
+    // WICHTIG: isClosing wird hier gesetzt, nicht in handleClose
+    setIsClosing(true);
 
     const watchDuration = watchStartTime ? (Date.now() - watchStartTime) / 1000 : 5;
 
@@ -304,49 +403,75 @@ export default function AdViewScreen() {
           ]),
         ]).start();
 
-        // Close the app after showing the modal (2.5 seconds - faster)
-        const closeDelay = fromNotification ? 3000 : 2500;
-        setTimeout(() => {
-          // Animate modal out quickly
-          Animated.parallel([
-            Animated.timing(modalFadeAnim, {
-              toValue: 0,
-              duration: 200,
-              easing: Easing.in(Easing.cubic),
-              useNativeDriver: true,
-            }),
-            Animated.timing(modalScaleAnim, {
-              toValue: 0.8,
-              duration: 200,
-              easing: Easing.in(Easing.cubic),
-              useNativeDriver: true,
-            }),
-            Animated.timing(blurOverlayAnim, {
-              toValue: 0,
-              duration: 200,
-              easing: Easing.in(Easing.cubic),
-              useNativeDriver: true,
-            }),
-          ]).start(() => {
-            setShowSuccessModal(false);
-            setShowBlurOverlay(false);
-            // Only close the app if user came from a notification (app was closed)
-            // If user was already in the app (test notifications), just navigate back
-            if (fromNotification) {
-              if (Platform.OS === 'android') {
-                // On Android, exit the app only if opened from notification
-                BackHandler.exitApp();
+        // X-Klick ist IMMER erforderlich
+        // Nach X-Klick: Wenn fromNotification === true → App schließen, sonst → zurück zur App
+        const shouldClose = closeRequested || closeRequestedRef.current;
+        
+        // Belohnung wird nach 2 Sekunden ausgeblendet
+        // X-Klick ist erforderlich - wenn X geklickt wurde, dann:
+        // - Wenn fromNotification === true → App schließen (App wurde durch Notification geöffnet)
+        // - Wenn fromNotification === false → zurück zur App
+        if (shouldClose) {
+          const closeDelay = 2000;
+          setTimeout(() => {
+            // Animate modal out quickly
+            Animated.parallel([
+              Animated.timing(modalFadeAnim, {
+                toValue: 0,
+                duration: 200,
+                easing: Easing.in(Easing.cubic),
+                useNativeDriver: true,
+              }),
+              Animated.timing(modalScaleAnim, {
+                toValue: 0.8,
+                duration: 200,
+                easing: Easing.in(Easing.cubic),
+                useNativeDriver: true,
+              }),
+              Animated.timing(blurOverlayAnim, {
+                toValue: 0,
+                duration: 200,
+                easing: Easing.in(Easing.cubic),
+                useNativeDriver: true,
+              }),
+            ]).start(() => {
+              setShowSuccessModal(false);
+              setShowBlurOverlay(false);
+              
+              // Nach X-Klick: App-Verhalten basierend auf fromNotification
+              if (fromNotification) {
+                // App wurde durch Notification geöffnet (App war geschlossen/im Hintergrund)
+                // → App schließen, damit User zurück zum vorherigen Zustand kommt
+                // → NICHT zurück zur App gehen
+                console.log('[AdView] Closing app because opened from notification (app was closed/background)');
+                if (Platform.OS === 'android') {
+                  // On Android, exit the app if opened from notification
+                  // Use setTimeout to ensure animations complete before closing
+                  setTimeout(() => {
+                    try {
+                      BackHandler.exitApp();
+                    } catch (error) {
+                      console.error('[AdView] Error closing app:', error);
+                      // Fallback: navigate to home screen
+                      router.replace('/(tabs)');
+                    }
+                  }, 100);
+                } else {
+                  // On iOS, apps can't be programmatically closed
+                  // Instead, navigate to home screen (iOS users can manually close via app switcher)
+                  router.replace('/(tabs)');
+                }
               } else {
-                // On iOS, apps can't be programmatically closed
-                // Instead, we'll just navigate back (iOS users can manually close)
+                // User war bereits aktiv in der App → Zurück zum Home Screen
+                console.log('[AdView] User was already in app, navigating to home');
                 router.replace('/(tabs)');
               }
-            } else {
-              // User was already in the app, just navigate back
-              router.replace('/(tabs)');
-            }
-          });
-        }, closeDelay);
+            });
+          }, closeDelay);
+        } else {
+          // Wenn closeRequested === false UND fromNotification === false, bleibt die Belohnung sichtbar und User kann manuell schließen
+          console.log('[AdView] Campaign completed, reward visible - user can close manually');
+        }
       } catch (error) {
         console.error('Complete ad view error:', error);
         showToast('Die Kampagne konnte nicht abgeschlossen werden', 'error', 3000);
@@ -359,7 +484,7 @@ export default function AdViewScreen() {
         setIsClosing(false);
       }
     })();
-  }, [ad, slotId, watchStartTime, fromNotification, isClosing, completeAdView, refreshSummary, showToast, router, fadeAnim, scaleAnim, slideAnim, modalFadeAnim, modalScaleAnim, modalIconScaleAnim, modalIconRotateAnim, blurOverlayAnim]);
+  }, [ad, slotId, watchStartTime, fromNotification, isClosing, closeRequested, completeAdView, refreshSummary, showToast, router, fadeAnim, scaleAnim, slideAnim, modalFadeAnim, modalScaleAnim, modalIconScaleAnim, modalIconRotateAnim, blurOverlayAnim]);
 
   // Store executeClose in ref so it can be accessed in timer
   useEffect(() => {
@@ -369,10 +494,22 @@ export default function AdViewScreen() {
   const handleClose = async () => {
     if (!ad || !slotId || isClosing) return;
 
-    // User can close anytime after the close button appears (from 3rd second onwards)
-    // No need to wait - close immediately when X is clicked
-    setIsClosing(true);
-    executeClose();
+    // User klickt auf X - merke es vor (sowohl State als auch Ref)
+    setCloseRequested(true);
+    closeRequestedRef.current = true;
+    
+    // Wenn Kampagne noch läuft (secondsRemaining > 0), warte bis zum Ende
+    // Wenn Kampagne bereits zu Ende ist (secondsRemaining === 0), zeige Belohnung und schließe
+    if (secondsRemaining === 0) {
+      // Kampagne ist zu Ende und User klickt jetzt auf X
+      // → zeige Belohnung und schließe nach 2 Sekunden
+      // → Wenn fromNotification === true: App schließen
+      // → Wenn fromNotification === false: Zurück zur App
+      if (executeCloseRef.current) {
+        executeCloseRef.current();
+      }
+    }
+    // Wenn secondsRemaining > 0, wird closeRequested gesetzt und executeClose wird beim Timer-Ende aufgerufen
   };
 
   // Update ref when secondsRemaining changes
@@ -380,61 +517,51 @@ export default function AdViewScreen() {
     secondsRemainingRef.current = secondsRemaining;
   }, [secondsRemaining]);
 
-  // Spin animation for loading state
+  // Update ref when closeRequested changes (für Closure-Problem in setTimeout)
   useEffect(() => {
-    if (!ad) {
-      Animated.loop(
-        Animated.timing(spinAnim, {
-          toValue: 1,
-          duration: 2000,
-          easing: Easing.linear,
-          useNativeDriver: true,
-        })
-      ).start();
+    closeRequestedRef.current = closeRequested;
+  }, [closeRequested]);
+
+  // Update ref when closeRequested changes
+  useEffect(() => {
+    closeRequestedRef.current = closeRequested;
+  }, [closeRequested]);
+
+  // Set animations to final state immediately when ad is loaded (no fade-in)
+  useEffect(() => {
+    if (ad) {
+      // Immediately set to final state without animation
+      fadeAnim.setValue(1);
+      scaleAnim.setValue(1);
+      slideAnim.setValue(0);
     }
-  }, [ad, spinAnim]);
+  }, [ad, fadeAnim, scaleAnim, slideAnim]);
 
-  const spin = spinAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '360deg'],
-  });
+  // Only show loading state if critical (not authenticated or error)
+  // Otherwise show black screen until ad is loaded (no animation)
+  if (!isAuthenticated) {
+    return (
+      <View className="flex-1 bg-black items-center justify-center">
+        <StatusBar hidden={true} />
+        <Text className="text-white text-lg">Authentifizierung erforderlich...</Text>
+      </View>
+    );
+  }
 
-  // Loading state with colorful animation
+  if (loadTimeout) {
+    return (
+      <View className="flex-1 bg-black items-center justify-center">
+        <StatusBar hidden={true} />
+        <Text className="text-white text-lg">Kampagne konnte nicht geladen werden</Text>
+      </View>
+    );
+  }
+
+  // Show black screen while loading (no animation, no spinning)
   if (!ad) {
     return (
-      <View className="flex-1 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 items-center justify-center">
+      <View className="flex-1 bg-black">
         <StatusBar hidden={true} />
-        
-        {/* SpotX Logo at top left */}
-        <View 
-          className="absolute left-6 z-10 items-center justify-center"
-          style={{
-            top: Math.max(insets.top, Platform.OS === 'ios' ? 20 : 0) + 12,
-          }}
-        >
-          <Logo size="medium" showAnimation={false} variant="light" />
-        </View>
-        
-        <Animated.View
-          style={{
-            opacity: fadeAnim,
-            transform: [{ scale: scaleAnim }, { rotate: spin }],
-          }}
-        >
-          <View className="items-center">
-            <View className="w-20 h-20 rounded-full bg-gradient-to-br from-purple-500 via-pink-500 to-blue-500 items-center justify-center mb-6 shadow-2xl">
-              <Sparkles size={40} color="#FFFFFF" />
-            </View>
-            <Text className="text-white text-2xl font-bold mb-2 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text">
-              Lade Kampagne...
-            </Text>
-            <View className="flex-row gap-2 mt-4">
-              <View className="w-2 h-2 rounded-full bg-purple-400" />
-              <View className="w-2 h-2 rounded-full bg-pink-400" />
-              <View className="w-2 h-2 rounded-full bg-blue-400" />
-            </View>
-          </View>
-        </Animated.View>
       </View>
     );
   }
@@ -621,15 +748,17 @@ export default function AdViewScreen() {
       )}
 
       {/* Close button - colorful with smooth animation */}
-      {showCloseButton && (
+      {/* Zeige X-Button während Kampagne (ab 3. Sekunde) UND nach Kampagne-Ende (bis Belohnung angezeigt wird) */}
+      {/* NICHT während Belohnungsanzeige */}
+      {(showCloseButton || (secondsRemaining === 0 && !showSuccessModal && !closeRequested)) && (
         <Animated.View
           style={{
             position: 'absolute',
-            top: closeButtonPosition.top,
-            right: closeButtonPosition.right,
+            top: secondsRemaining === 0 && !showCloseButton ? Math.max(insets.top, Platform.OS === 'ios' ? 20 : 0) + 12 : closeButtonPosition.top,
+            right: secondsRemaining === 0 && !showCloseButton ? 20 : closeButtonPosition.right,
             zIndex: 30,
-            opacity: closeButtonAnim,
-            transform: [
+            opacity: secondsRemaining === 0 && !showCloseButton ? 1 : closeButtonAnim,
+            transform: secondsRemaining === 0 && !showCloseButton ? [] : [
               { scale: closeButtonAnim.interpolate({
                   inputRange: [0, 1],
                   outputRange: [0, 1.2],
@@ -874,6 +1003,7 @@ export default function AdViewScreen() {
       )}
 
       {/* Success Modal - zeigt Belohnung und Erfolgsmeldung */}
+      {/* Wenn Belohnung angezeigt wird, kann User nicht mehr auf X klicken (X-Button ist versteckt) */}
       {showSuccessModal && (
         <View
           style={{

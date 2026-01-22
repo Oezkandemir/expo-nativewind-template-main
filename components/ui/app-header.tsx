@@ -53,7 +53,7 @@ export function AppHeader({ showLogo = true, className }: AppHeaderProps) {
         {
           backgroundColor,
           borderBottomColor,
-          paddingTop: insets.top, // Use actual safe area insets instead of hardcoded value
+          paddingTop: insets.top, // Extend into status bar area
         },
       ]}
     >
@@ -68,7 +68,7 @@ export function AppHeader({ showLogo = true, className }: AppHeaderProps) {
           </Pressable>
         )}
         <View style={[styles.logoContainer, !showBackButton && styles.logoContainerCentered]}>
-          <Logo size="medium" showAnimation={true} variant="light" showSlogan={true} />
+          <Logo size="medium" showAnimation={false} variant="light" showSlogan={true} />
         </View>
         {showBackButton && <View style={styles.backButtonPlaceholder} />}
       </View>
