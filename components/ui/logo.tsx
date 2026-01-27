@@ -7,6 +7,7 @@ import Animated, {
     useSharedValue,
     withDelay,
     withRepeat,
+    withSequence,
     withTiming,
 } from 'react-native-reanimated';
 import { Text } from './text';
@@ -26,6 +27,8 @@ const sizeMap = {
 
 export function Logo({ size = 'medium', showAnimation = false, className, variant = 'auto', showSlogan = false }: LogoProps & { showSlogan?: boolean }) {
   const rotation = useSharedValue(0);
+  const scale = useSharedValue(1);
+  const opacity = useSharedValue(1);
   const iconColor = '#EF4444'; // Red color for X icon
 
   // Ensure size is valid, fallback to 'medium' if not
@@ -45,23 +48,43 @@ export function Logo({ size = 'medium', showAnimation = false, className, varian
 
   useEffect(() => {
     if (showAnimation) {
-      // Continuous rotation animation (spinner effect)
+      // Rotate 360 degrees, pause, reset to 0, then repeat
       rotation.value = withRepeat(
-        withTiming(360, {
-          duration: 1000,
-          easing: Easing.linear,
-        }),
+        withSequence(
+          withTiming(360, {
+            duration: 1000,
+            easing: Easing.out(Easing.ease),
+          }),
+          withTiming(360, {
+            duration: 2000,
+            easing: Easing.linear,
+          }), // Pause at 360 degrees for 2 seconds
+          withTiming(0, {
+            duration: 0,
+            easing: Easing.linear,
+          }) // Instant reset to 0
+        ),
         -1, // Infinite repeat
         false // Don't reverse
       );
+
+      // Reset scale and opacity to normal
+      scale.value = 1;
+      opacity.value = 1;
     } else {
-      // Reset rotation when animation is disabled
+      // Reset all animations when disabled
       rotation.value = 0;
+      scale.value = 1;
+      opacity.value = 1;
     }
-  }, [showAnimation, rotation]);
+  }, [showAnimation, rotation, scale, opacity]);
 
   const iconStyle = useAnimatedStyle(() => ({
-    transform: [{ rotate: `${rotation.value}deg` }],
+    transform: [
+      { rotate: `${rotation.value}deg` },
+      { scale: scale.value },
+    ],
+    opacity: opacity.value,
   }));
 
   const containerStyle = [

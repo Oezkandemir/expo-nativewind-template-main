@@ -3,6 +3,7 @@ import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
 import { useEffect, useRef } from 'react';
 import Svg, { Circle } from 'react-native-svg';
+import { X } from 'lucide-react-native';
 
 interface OnboardingSlideProps {
   image: string;
@@ -23,12 +24,17 @@ export function OnboardingSlide({
   showBack = false,
   isActive = true,
 }: OnboardingSlideProps) {
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(30)).current;
-  const imageScaleAnim = useRef(new Animated.Value(0.9)).current;
+  const fadeAnim = useRef(new Animated.Value(isActive ? 1 : 0)).current;
+  const slideAnim = useRef(new Animated.Value(isActive ? 0 : 30)).current;
+  const imageScaleAnim = useRef(new Animated.Value(isActive ? 1 : 0.9)).current;
 
   useEffect(() => {
     if (isActive) {
+      // Stop any existing animations first
+      fadeAnim.stopAnimation();
+      slideAnim.stopAnimation();
+      imageScaleAnim.stopAnimation();
+      
       Animated.parallel([
         Animated.timing(fadeAnim, {
           toValue: 1,
@@ -48,6 +54,10 @@ export function OnboardingSlide({
         }),
       ]).start();
     } else {
+      fadeAnim.stopAnimation();
+      slideAnim.stopAnimation();
+      imageScaleAnim.stopAnimation();
+      
       fadeAnim.setValue(0);
       slideAnim.setValue(30);
       imageScaleAnim.setValue(0.9);
@@ -57,6 +67,7 @@ export function OnboardingSlide({
   // App Icon in Circle Component
   const AppIconInCircle = ({ size = 280 }: { size?: number }) => {
     const iconSize = size * 0.65; // Icon ist 65% der Circle-Größe
+    const xIconSize = size * 0.4; // X Icon Größe (ähnlich wie im Logo)
     const circleRadius = size / 2;
     
     // Animation values for circles
@@ -66,114 +77,141 @@ export function OnboardingSlide({
     const circle1Scale = useRef(new Animated.Value(0.8)).current;
     const circle2Scale = useRef(new Animated.Value(0.8)).current;
     const circle3Scale = useRef(new Animated.Value(0.8)).current;
-    const rotationAnim = useRef(new Animated.Value(0)).current;
     const pulseAnim = useRef(new Animated.Value(1)).current;
+    const glowAnim = useRef(new Animated.Value(0.5)).current;
 
     useEffect(() => {
-      if (isActive) {
-        // Staggered fade-in and scale animation for circles
-        Animated.sequence([
-          Animated.parallel([
-            Animated.timing(circle1Opacity, {
-              toValue: 1,
-              duration: 500,
-              useNativeDriver: true,
-            }),
-            Animated.spring(circle1Scale, {
-              toValue: 1,
-              tension: 40,
-              friction: 6,
-              useNativeDriver: true,
-            }),
-          ]),
-          Animated.parallel([
-            Animated.timing(circle2Opacity, {
-              toValue: 1,
-              duration: 500,
-              useNativeDriver: true,
-            }),
-            Animated.spring(circle2Scale, {
-              toValue: 1,
-              tension: 40,
-              friction: 6,
-              useNativeDriver: true,
-            }),
-          ]),
-          Animated.parallel([
-            Animated.timing(circle3Opacity, {
-              toValue: 1,
-              duration: 500,
-              useNativeDriver: true,
-            }),
-            Animated.spring(circle3Scale, {
-              toValue: 1,
-              tension: 40,
-              friction: 6,
-              useNativeDriver: true,
-            }),
-          ]),
-        ]).start();
-
-        // Continuous slow rotation animation
-        Animated.loop(
-          Animated.timing(rotationAnim, {
-            toValue: 1,
-            duration: 30000, // 30 seconds for full rotation
-            easing: Easing.linear,
-            useNativeDriver: true,
-          })
-        ).start();
-
-        // Pulsing animation
-        Animated.loop(
-          Animated.sequence([
-            Animated.timing(pulseAnim, {
-              toValue: 1.08,
-              duration: 2500,
-              easing: Easing.inOut(Easing.ease),
-              useNativeDriver: true,
-            }),
-            Animated.timing(pulseAnim, {
-              toValue: 1,
-              duration: 2500,
-              easing: Easing.inOut(Easing.ease),
-              useNativeDriver: true,
-            }),
-          ])
-        ).start();
-      } else {
-        // Reset animations when not active
+      if (!isActive) {
+        // Reset values when not active
         circle1Opacity.setValue(0);
         circle2Opacity.setValue(0);
         circle3Opacity.setValue(0);
         circle1Scale.setValue(0.8);
         circle2Scale.setValue(0.8);
         circle3Scale.setValue(0.8);
-        rotationAnim.setValue(0);
         pulseAnim.setValue(1);
+        glowAnim.setValue(0.5);
+        return;
       }
-    }, [isActive, circle1Opacity, circle2Opacity, circle3Opacity, circle1Scale, circle2Scale, circle3Scale, rotationAnim, pulseAnim]);
 
-    // Rotation interpolation
-    const rotateInterpolate = rotationAnim.interpolate({
-      inputRange: [0, 1],
-      outputRange: ['0deg', '360deg'],
-    });
+      // Stop any existing animations first to prevent conflicts
+      circle1Opacity.stopAnimation();
+      circle2Opacity.stopAnimation();
+      circle3Opacity.stopAnimation();
+      circle1Scale.stopAnimation();
+      circle2Scale.stopAnimation();
+      circle3Scale.stopAnimation();
+      pulseAnim.stopAnimation();
+      glowAnim.stopAnimation();
 
-    // Combined scale animations (initial scale * pulse)
-    const circle1CombinedScale = Animated.multiply(circle1Scale, pulseAnim);
-    const circle2CombinedScale = Animated.multiply(circle2Scale, pulseAnim);
-    const circle3CombinedScale = Animated.multiply(circle3Scale, pulseAnim);
-    
+      // Reset values before starting new animations
+      circle1Opacity.setValue(0);
+      circle2Opacity.setValue(0);
+      circle3Opacity.setValue(0);
+      circle1Scale.setValue(0.8);
+      circle2Scale.setValue(0.8);
+      circle3Scale.setValue(0.8);
+      pulseAnim.setValue(1);
+      glowAnim.setValue(0.5);
+
+      // Staggered fade-in and scale animation for circles
+      const circleAnimation = Animated.sequence([
+        Animated.parallel([
+          Animated.timing(circle1Opacity, {
+            toValue: 1,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+          Animated.spring(circle1Scale, {
+            toValue: 1,
+            tension: 40,
+            friction: 6,
+            useNativeDriver: true,
+          }),
+        ]),
+        Animated.parallel([
+          Animated.timing(circle2Opacity, {
+            toValue: 1,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+          Animated.spring(circle2Scale, {
+            toValue: 1,
+            tension: 40,
+            friction: 6,
+            useNativeDriver: true,
+          }),
+        ]),
+        Animated.parallel([
+          Animated.timing(circle3Opacity, {
+            toValue: 1,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+          Animated.spring(circle3Scale, {
+            toValue: 1,
+            tension: 40,
+            friction: 6,
+            useNativeDriver: true,
+          }),
+        ]),
+      ]);
+      circleAnimation.start();
+
+      // Pulsing animation for X letter - smoother and more modern
+      const pulseAnimation = Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim, {
+            toValue: 1.2,
+            duration: 1200,
+            easing: Easing.out(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulseAnim, {
+            toValue: 1,
+            duration: 1200,
+            easing: Easing.in(Easing.ease),
+            useNativeDriver: true,
+          }),
+        ])
+      );
+      pulseAnimation.start();
+
+      // Glow animation for X letter
+      const glowAnimation = Animated.loop(
+        Animated.sequence([
+          Animated.timing(glowAnim, {
+            toValue: 1,
+            duration: 1200,
+            easing: Easing.out(Easing.ease),
+            useNativeDriver: false, // opacity needs false for shadow
+          }),
+          Animated.timing(glowAnim, {
+            toValue: 0.5,
+            duration: 1200,
+            easing: Easing.in(Easing.ease),
+            useNativeDriver: false,
+          }),
+        ])
+      );
+      glowAnimation.start();
+
+      // Cleanup function to stop animations when component unmounts or isActive changes
+      return () => {
+        circleAnimation.stop();
+        pulseAnimation.stop();
+        glowAnimation.stop();
+      };
+    }, [isActive, circle1Opacity, circle2Opacity, circle3Opacity, circle1Scale, circle2Scale, circle3Scale, pulseAnim, glowAnim]);
+
     return (
       <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
-        {/* Animated SVG Container with rotation */}
+        {/* Animated SVG Container (no rotation) */}
         <Animated.View 
           style={{
             position: 'absolute',
             width: size,
             height: size,
-            transform: [{ rotate: rotateInterpolate }],
           }}
         >
           {/* Circle 1 - Outer */}
@@ -183,7 +221,7 @@ export function OnboardingSlide({
               width: size,
               height: size,
               opacity: circle1Opacity,
-              transform: [{ scale: circle1CombinedScale }],
+              transform: [{ scale: circle1Scale }],
             }}
           >
             <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
@@ -191,7 +229,9 @@ export function OnboardingSlide({
                 cx={circleRadius} 
                 cy={circleRadius} 
                 r={circleRadius - 2} 
-                fill="rgba(139, 92, 246, 0.15)" 
+                fill="rgba(15, 23, 42, 0.9)" 
+                stroke="rgba(239, 68, 68, 0.1)"
+                strokeWidth="2"
               />
             </Svg>
           </Animated.View>
@@ -203,7 +243,7 @@ export function OnboardingSlide({
               width: size,
               height: size,
               opacity: circle2Opacity,
-              transform: [{ scale: circle2CombinedScale }],
+              transform: [{ scale: circle2Scale }],
             }}
           >
             <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
@@ -211,7 +251,9 @@ export function OnboardingSlide({
                 cx={circleRadius} 
                 cy={circleRadius} 
                 r={circleRadius - 15} 
-                fill="rgba(139, 92, 246, 0.08)" 
+                fill="rgba(15, 23, 42, 0.7)" 
+                stroke="rgba(239, 68, 68, 0.08)"
+                strokeWidth="1.5"
               />
             </Svg>
           </Animated.View>
@@ -223,7 +265,7 @@ export function OnboardingSlide({
               width: size,
               height: size,
               opacity: circle3Opacity,
-              transform: [{ scale: circle3CombinedScale }],
+              transform: [{ scale: circle3Scale }],
             }}
           >
             <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
@@ -231,39 +273,51 @@ export function OnboardingSlide({
                 cx={circleRadius} 
                 cy={circleRadius} 
                 r={circleRadius - 25} 
-                fill="rgba(139, 92, 246, 0.03)" 
+                fill="rgba(15, 23, 42, 0.5)" 
+                stroke="rgba(239, 68, 68, 0.05)"
+                strokeWidth="1"
               />
             </Svg>
           </Animated.View>
         </Animated.View>
 
-        {/* App Icon Container - Static, no rotation */}
-        <View 
+        {/* X Letter - Modern pulsing animation with glow */}
+        <Animated.View 
           style={{
             position: 'absolute',
             width: iconSize,
             height: iconSize,
-            borderRadius: iconSize / 2,
-            overflow: 'hidden',
-            backgroundColor: '#1E293B',
-            borderWidth: 3,
-            borderColor: 'rgba(139, 92, 246, 0.4)',
-            shadowColor: '#8B5CF6',
-            shadowOffset: { width: 0, height: 8 },
-            shadowOpacity: 0.3,
-            shadowRadius: 16,
-            elevation: 8,
+            alignItems: 'center',
+            justifyContent: 'center',
+            opacity: glowAnim,
           }}
         >
-          <Image
-            source={require('@/assets/images/iconbgremoved.png')}
+          <Animated.View
             style={{
-              width: '100%',
-              height: '100%',
-              resizeMode: 'cover',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transform: [{ scale: pulseAnim }],
+              shadowColor: '#EF4444',
+              shadowOffset: { width: 0, height: 0 },
+              shadowOpacity: 0.8,
+              shadowRadius: 20,
+              elevation: 20,
             }}
-          />
-        </View>
+          >
+            <Text style={{ 
+              fontSize: xIconSize, 
+              fontWeight: '800', 
+              color: '#EF4444',
+              lineHeight: xIconSize,
+              textShadowColor: 'rgba(239, 68, 68, 0.8)',
+              textShadowOffset: { width: 0, height: 0 },
+              textShadowRadius: 15,
+              letterSpacing: -2,
+            }}>
+              X
+            </Text>
+          </Animated.View>
+        </Animated.View>
       </View>
     );
   };
@@ -309,11 +363,12 @@ export function OnboardingSlide({
             </Button>
           )}
           <Button 
+            variant="outline"
             onPress={onNext} 
             className={showBack ? 'flex-1' : 'w-full'}
-            style={{ borderRadius: 12, minHeight: 52 }}
+            style={{ borderRadius: 12, minHeight: 52, borderColor: 'rgba(139, 92, 246, 0.5)', backgroundColor: 'rgba(139, 92, 246, 0.1)' }}
           >
-            <Text className="font-semibold" style={{ fontSize: 16, fontWeight: '600' }}>Weiter</Text>
+            <Text className="text-white font-semibold" style={{ fontSize: 16, fontWeight: '600' }}>Weiter</Text>
           </Button>
         </View>
       </Animated.View>

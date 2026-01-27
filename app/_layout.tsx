@@ -34,6 +34,7 @@ function RootLayoutNav() {
   const hasNavigated = useRef(false);
   const hasCheckedNotification = useRef(false);
   const hasHandledDeepLink = useRef(false);
+  const notificationCheckInProgress = useRef(false);
 
   // Handle email confirmation deep link
   useEffect(() => {
@@ -113,17 +114,21 @@ function RootLayoutNav() {
     };
   }, [authLoading, router]);
 
-  // Handle notification navigation
+  // Handle notification navigation - FIXED: Wait for auth and prevent race condition
   useEffect(() => {
-    if (authLoading || hasCheckedNotification.current || hasHandledDeepLink.current) {
+    // Wait for auth to be ready before checking notification
+    if (authLoading || hasCheckedNotification.current || hasHandledDeepLink.current || notificationCheckInProgress.current) {
       return;
     }
 
-    hasCheckedNotification.current = true;
+    // Mark that we're checking notification to prevent race condition
+    notificationCheckInProgress.current = true;
 
     const checkNotification = async () => {
       try {
+        console.log('[RootLayoutNav] Checking for notification, isAuthenticated:', isAuthenticated);
         const lastResponse = await Notifications.getLastNotificationResponseAsync();
+        
         if (lastResponse) {
           const data = lastResponse.notification.request.content.data as {
             type?: string;
@@ -138,8 +143,48 @@ function RootLayoutNav() {
             data?.type === 'admin_notification' ||
             !data?.type;
 
+          console.log('[RootLayoutNav] Notification found, isAdNotification:', isAdNotification, 'isAuthenticated:', isAuthenticated);
+
+          // Wait a bit if auth is still loading (shouldn't happen due to check above, but safety)
+          if (!isAuthenticated) {
+            console.log('[RootLayoutNav] Auth not ready, waiting...');
+            // Wait for auth to be ready - check again after a short delay
+            setTimeout(() => {
+              if (isAuthenticated && isAdNotification) {
+                const slotId = data.slotId || AD_SLOTS[0]?.id || 'slot_1';
+                console.log('[RootLayoutNav] Navigating to campaign screen from notification');
+                router.replace({
+                  pathname: '/(tabs)/ad-view',
+                  params: {
+                    slotId,
+                    autoStart: data?.autoStart === true || data?.type === 'admin_notification' ? 'true' : 'false',
+                    fromNotification: 'true',
+                    ...(data.campaignId && { campaignId: data.campaignId }),
+                  },
+                });
+                hasNavigated.current = true;
+                hasCheckedNotification.current = true;
+                notificationCheckInProgress.current = false;
+              } else {
+                // Auth still not ready or not an ad notification, proceed with normal navigation
+                hasCheckedNotification.current = true;
+                notificationCheckInProgress.current = false;
+                if (!hasNavigated.current && !hasHandledDeepLink.current) {
+                  hasNavigated.current = true;
+                  if (!isAuthenticated) {
+                    router.replace('/(onboarding)/welcome');
+                  } else {
+                    router.replace('/(tabs)');
+                  }
+                }
+              }
+            }, 500);
+            return;
+          }
+
           if (isAdNotification && isAuthenticated) {
             const slotId = data.slotId || AD_SLOTS[0]?.id || 'slot_1';
+            console.log('[RootLayoutNav] Navigating to campaign screen from notification');
             router.replace({
               pathname: '/(tabs)/ad-view',
               params: {
@@ -150,12 +195,18 @@ function RootLayoutNav() {
               },
             });
             hasNavigated.current = true;
+            hasCheckedNotification.current = true;
+            notificationCheckInProgress.current = false;
             return;
           }
         }
       } catch (error) {
-        console.error('Error checking notification:', error);
+        console.error('[RootLayoutNav] Error checking notification:', error);
       }
+
+      // Mark notification check as complete
+      hasCheckedNotification.current = true;
+      notificationCheckInProgress.current = false;
 
       // Normal navigation if no notification
       if (!hasNavigated.current && !hasHandledDeepLink.current) {
@@ -171,9 +222,15 @@ function RootLayoutNav() {
     checkNotification();
   }, [authLoading, isAuthenticated, router]);
 
-  // Normal navigation fallback
+  // Normal navigation fallback - FIXED: Wait for notification check to complete
   useEffect(() => {
-    if (authLoading || hasNavigated.current || hasHandledDeepLink.current) {
+    // Wait for auth, notification check, and deep link handling to complete
+    if (authLoading || hasNavigated.current || hasHandledDeepLink.current || notificationCheckInProgress.current) {
+      return;
+    }
+
+    // Only proceed if notification check has completed
+    if (!hasCheckedNotification.current) {
       return;
     }
 
@@ -253,7 +310,7 @@ export default function RootLayout() {
       const remainingTime = Math.max(0, MIN_SPLASH_DURATION - elapsed);
       
       // Wait for minimum splash duration + small delay to ensure navigation is rendered
-      await new Promise((resolve) => setTimeout(resolve, remainingTime + 150));
+      await new Promise((resolve) => setTimeout(resolve, remainingTime + 300));
       await SplashScreen.hideAsync();
       setSplashHidden(true);
       setNormal().catch(() => {});
@@ -263,7 +320,8 @@ export default function RootLayout() {
     }
   }, [appIsReady, splashHidden]);
 
-  // Show splash screen until app is ready
+  // Show splash screen only until app is ready (fonts loaded)
+  // AppContent will be rendered and call onLayoutRootView to hide splash after delay
   if (!appIsReady) {
     return <CustomSplashScreen isLoading={true} />;
   }
@@ -279,6 +337,12 @@ export default function RootLayout() {
                   <AdProvider>
                     <RewardProvider>
                       <AppContent onLayoutRootView={onLayoutRootView} />
+                      {/* Show splash overlay until it's hidden */}
+                      {!splashHidden && (
+                        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999 }}>
+                          <CustomSplashScreen isLoading={true} />
+                        </View>
+                      )}
                       <StatusBar style="light" translucent backgroundColor="transparent" />
                     </RewardProvider>
                   </AdProvider>

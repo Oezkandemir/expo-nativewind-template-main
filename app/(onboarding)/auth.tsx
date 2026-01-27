@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { View, Keyboard, Platform, Pressable, TextInput } from 'react-native';
 import { router } from 'expo-router';
-import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
+import Animated, { FadeInDown, FadeIn, SlideInDown, Easing } from 'react-native-reanimated';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
@@ -11,7 +11,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabaseAuthService } from '@/lib/supabase/auth-service';
 import { useToast } from '@/components/ui/toast';
 import { Logo } from '@/components/ui/logo';
-import { Mail, Lock, Eye, EyeOff, AlertCircle, ChevronLeft } from 'lucide-react-native';
+import { Mail, Lock, Eye, EyeOff, AlertCircle, ChevronLeft, ChevronRight, Check } from 'lucide-react-native';
 import { iconWithClassName } from '@/components/ui/lib/icons/icon-with-classname';
 
 const MailIcon = iconWithClassName(Mail);
@@ -20,21 +20,103 @@ const EyeIcon = iconWithClassName(Eye);
 const EyeOffIcon = iconWithClassName(EyeOff);
 const AlertIcon = iconWithClassName(AlertCircle);
 const ChevronLeftIcon = iconWithClassName(ChevronLeft);
+const ChevronRightIcon = iconWithClassName(ChevronRight);
+const CheckIcon = iconWithClassName(Check);
 
 export default function AuthScreen() {
   const { register, login } = useAuth();
   const { showToast } = useToast();
   const [isSignUp, setIsSignUp] = useState(true);
+  // Step state: 'email' | 'password' | 'confirmPassword' (for signup)
+  const [step, setStep] = useState<'email' | 'password' | 'confirmPassword'>('email');
   const [formData, setFormData] = useState({
     email: '',
     password: '',
     confirmPassword: '',
   });
   const [loading, setLoading] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
   const [showEmailSentMessage, setShowEmailSentMessage] = useState(false);
   const [resendingEmail, setResendingEmail] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [emailValidated, setEmailValidated] = useState(false);
+  
+  // Refs for input fields
+  const emailInputRef = useRef<TextInput>(null);
+  const passwordInputRef = useRef<TextInput>(null);
+  const confirmPasswordInputRef = useRef<TextInput>(null);
+
+  // Reset step when switching between signup/login
+  useEffect(() => {
+    setStep('email');
+    setFormData({ email: '', password: '', confirmPassword: '' });
+    setEmailValidated(false);
+  }, [isSignUp]);
+
+  // Reset email validated only when email is cleared or step goes back to email
+  useEffect(() => {
+    if (step === 'email' && !formData.email.trim()) {
+      setEmailValidated(false);
+    }
+  }, [formData.email, step]);
+
+  // Focus next field when step changes
+  useEffect(() => {
+    if (step === 'password') {
+      setTimeout(() => {
+        passwordInputRef.current?.focus();
+      }, 200);
+    } else if (step === 'confirmPassword') {
+      setTimeout(() => {
+        confirmPasswordInputRef.current?.focus();
+      }, 200);
+    }
+  }, [step]);
+
+  const handleEmailNext = () => {
+    if (!formData.email.trim()) {
+      showToast('Bitte geben Sie Ihre E-Mail-Adresse ein', 'error', 3000);
+      setEmailValidated(false);
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email.trim())) {
+      showToast('Bitte geben Sie eine gültige E-Mail-Adresse ein', 'error', 3000);
+      setEmailValidated(false);
+      return;
+    }
+
+    // Email is valid - show checkmark and keep it visible
+    setEmailValidated(true);
+    
+    // Small delay to show checkmark animation, then proceed
+    setTimeout(() => {
+      setStep('password');
+      Keyboard.dismiss();
+    }, 300);
+  };
+
+  const handlePasswordNext = () => {
+    if (!formData.password) {
+      showToast('Bitte geben Sie ein Passwort ein', 'error', 3000);
+      return;
+    }
+
+    if (formData.password.length < 6) {
+      showToast('Das Passwort muss mindestens 6 Zeichen lang sein', 'error', 3000);
+      return;
+    }
+
+    if (isSignUp) {
+      setStep('confirmPassword');
+    } else {
+      // For login, submit directly
+      handleSubmit();
+    }
+    Keyboard.dismiss();
+  };
 
   const validateForm = () => {
     if (isSignUp) {
@@ -108,10 +190,19 @@ export default function AuthScreen() {
           return;
         }
 
-        showToast('✓ Erfolgreich angemeldet!', 'success', 2000);
+        // Show fullscreen loading spinner immediately
+        setIsNavigating(true);
+        setLoading(false);
+
+        // Small delay to ensure smooth transition
+        await new Promise((resolve) => setTimeout(resolve, 200));
 
         // Check if onboarding is complete
         const onboardingComplete = await supabaseAuthService.isOnboardingComplete();
+        
+        // Additional delay to show loading state
+        await new Promise((resolve) => setTimeout(resolve, 300));
+
         if (!onboardingComplete) {
           // User hasn't completed onboarding, send to interests
           router.push('/(onboarding)/interests');
@@ -121,6 +212,7 @@ export default function AuthScreen() {
       }
     } catch (error) {
       console.error('Auth error:', error);
+      setIsNavigating(false);
       showToast('Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.', 'error', 3000);
     } finally {
       setLoading(false);
@@ -157,6 +249,21 @@ export default function AuthScreen() {
     setShowConfirmPassword(!showConfirmPassword);
   };
 
+  // Show fullscreen loading spinner after successful login
+  if (isNavigating) {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#0F172A' }}>
+        <SafeAreaView className="flex-1" style={{ backgroundColor: '#0F172A' }}>
+          <View className="flex-1 items-center justify-center">
+            <Animated.View entering={FadeIn.duration(300)}>
+              <Logo size="large" showAnimation={true} variant="light" showSlogan={false} />
+            </Animated.View>
+          </View>
+        </SafeAreaView>
+      </View>
+    );
+  }
+
   // Show email confirmation screen after registration
   if (showEmailSentMessage) {
     return (
@@ -168,11 +275,11 @@ export default function AuthScreen() {
             style={{ backgroundColor: '#0F172A' }}
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           >
-            <View className="flex-1 px-6 justify-center">
+            <View className="flex-1 px-6" style={{ paddingTop: Platform.OS === 'ios' ? 8 : 16 }}>
               {/* Back Button */}
               <Pressable 
                 onPress={handleBack}
-                className="absolute top-12 left-6 z-10"
+                className="absolute top-4 left-6 z-10"
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
                 <ChevronLeftIcon size={24} color="#FFFFFF" />
@@ -181,7 +288,8 @@ export default function AuthScreen() {
               {/* SpotX Logo - Top Center */}
               <Animated.View 
                 entering={FadeIn.duration(400)}
-                className="mb-8 items-center"
+                className="items-center"
+                style={{ marginTop: Platform.OS === 'ios' ? 8 : 16, marginBottom: 16 }}
               >
                 <Logo size="large" showAnimation={false} variant="light" />
               </Animated.View>
@@ -268,11 +376,11 @@ export default function AuthScreen() {
           style={{ backgroundColor: '#0F172A' }}
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
-          <View className="flex-1 px-6 justify-center">
+          <View className="flex-1 px-6" style={{ paddingTop: Platform.OS === 'ios' ? 8 : 16 }}>
             {/* Back Button */}
             <Pressable 
               onPress={handleBack}
-              className="absolute top-12 left-6 z-10"
+              className="absolute top-4 left-6 z-10"
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
               <ChevronLeftIcon size={24} color="#FFFFFF" />
@@ -281,7 +389,8 @@ export default function AuthScreen() {
             {/* SpotX Logo - Top Center */}
             <Animated.View 
               entering={FadeIn.duration(400)}
-              className="mb-8 items-center"
+              className="items-center"
+              style={{ marginTop: Platform.OS === 'ios' ? 8 : 16, marginBottom: 16 }}
             >
               <Logo size="large" showAnimation={false} variant="light" />
             </Animated.View>
@@ -289,35 +398,33 @@ export default function AuthScreen() {
             {/* Welcome Text */}
             <Animated.View 
               entering={FadeInDown.delay(200).duration(400)}
-              className="mb-8 items-center"
+              className="items-center"
+              style={{ marginBottom: 24 }}
             >
-              <Text variant="h1" className="text-center text-white mb-3" style={{ fontSize: 32, fontWeight: '700' }}>
+              <Text variant="h1" className="text-center text-white mb-2" style={{ fontSize: 24, fontWeight: '700' }}>
                 {isSignUp ? 'Registrieren' : 'Willkommen zurück'}
               </Text>
-              <Text variant="p" className="text-center" style={{ color: '#9CA3AF', fontSize: 16 }}>
+              <Text variant="p" className="text-center" style={{ color: '#9CA3AF', fontSize: 14 }}>
                 {isSignUp ? 'Beginnen Sie Ihre Reise' : 'Melden Sie sich an, um fortzufahren'}
               </Text>
             </Animated.View>
 
             {/* Form */}
-            <Animated.View entering={FadeInDown.delay(300).duration(400)} className="gap-5">
-              {/* Email Input */}
+            <Animated.View entering={FadeInDown.delay(300).duration(400)} className="gap-4">
+              {/* Email Input - Always visible */}
               <View>
-                <View className="flex-row items-center mb-2">
-                  <MailIcon size={18} color="#9CA3AF" style={{ marginRight: 8 }} />
-                  <Text className="text-white" style={{ fontSize: 14, fontWeight: '500' }}>E-Mail</Text>
-                </View>
                 <View className="flex-row items-center" style={{ 
                   backgroundColor: '#1E293B', 
                   borderRadius: 12, 
                   borderWidth: 1, 
                   borderColor: 'rgba(139, 92, 246, 0.2)',
                   paddingHorizontal: 16,
-                  paddingVertical: Platform.OS === 'ios' ? 16 : 12,
-                  minHeight: 52
+                  paddingVertical: Platform.OS === 'ios' ? 14 : 10,
+                  minHeight: 48
                 }}>
                   <MailIcon size={20} color="#6B7280" style={{ marginRight: 12 }} />
                   <TextInput
+                    ref={emailInputRef}
                     placeholder="ihre.email@example.com"
                     placeholderTextColor="#6B7280"
                     value={formData.email}
@@ -327,145 +434,238 @@ export default function AuthScreen() {
                     autoCorrect={false}
                     autoComplete="email"
                     textContentType="emailAddress"
-                    returnKeyType="next"
+                    returnKeyType={step === 'email' ? 'done' : 'next'}
                     blurOnSubmit={false}
+                    onSubmitEditing={() => {
+                      if (step === 'email') {
+                        handleEmailNext();
+                      } else if (step === 'password') {
+                        passwordInputRef.current?.focus();
+                      }
+                    }}
                     style={{ flex: 1, color: '#FFFFFF', fontSize: 16 }}
                     editable={!loading}
                   />
+                  {/* Show check icon if email is validated, arrow icon if email entered but not validated, or nothing */}
+                  {formData.email.trim() && (
+                    <View style={{ marginLeft: 8 }}>
+                      {emailValidated ? (
+                        <Animated.View entering={FadeIn.duration(200)}>
+                          <CheckIcon size={20} color="#10B981" />
+                        </Animated.View>
+                      ) : step === 'email' ? (
+                        <Pressable
+                          onPress={handleEmailNext}
+                          disabled={loading || !formData.email.trim()}
+                          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                        >
+                          <ChevronRightIcon size={20} color={loading || !formData.email.trim() ? '#6B7280' : '#8B5CF6'} />
+                        </Pressable>
+                      ) : null}
+                    </View>
+                  )}
                 </View>
               </View>
 
-              {/* Password Input */}
-              <View>
-                <View className="flex-row items-center mb-2">
-                  <LockIcon size={18} color="#9CA3AF" style={{ marginRight: 8 }} />
-                  <Text className="text-white" style={{ fontSize: 14, fontWeight: '500' }}>Passwort</Text>
-                </View>
-                <View className="flex-row items-center" style={{ 
-                  backgroundColor: '#1E293B', 
-                  borderRadius: 12, 
-                  borderWidth: 1, 
-                  borderColor: 'rgba(139, 92, 246, 0.2)',
-                  paddingHorizontal: 16,
-                  paddingVertical: Platform.OS === 'ios' ? 16 : 12,
-                  minHeight: 52
-                }}>
-                  <LockIcon size={20} color="#6B7280" style={{ marginRight: 12 }} />
-                  <TextInput
-                    placeholder={isSignUp ? "Mindestens 6 Zeichen" : "Ihr Passwort"}
-                    placeholderTextColor="#6B7280"
-                    value={formData.password}
-                    onChangeText={(text) => setFormData({ ...formData, password: text })}
-                    secureTextEntry={!showPassword}
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    autoComplete={isSignUp ? "password-new" : "password"}
-                    textContentType={isSignUp ? "newPassword" : "password"}
-                    returnKeyType={isSignUp ? "next" : "done"}
-                    blurOnSubmit={false}
-                    onSubmitEditing={isSignUp ? undefined : handleSubmit}
-                    style={{ flex: 1, color: '#FFFFFF', fontSize: 16 }}
-                    editable={!loading}
-                  />
-                  <Pressable onPress={togglePasswordVisibility} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                    {showPassword ? (
-                      <EyeOffIcon size={20} color="#6B7280" />
-                    ) : (
-                      <EyeIcon size={20} color="#6B7280" />
+              {/* Password Input - Visible when step is 'password' or 'confirmPassword' */}
+              {(step === 'password' || step === 'confirmPassword') && (
+                <Animated.View entering={FadeInDown.duration(600).easing(Easing.bezier(0.25, 0.1, 0.25, 1))}>
+                  <View>
+                    <View className="flex-row items-center" style={{ 
+                      backgroundColor: '#1E293B', 
+                      borderRadius: 12, 
+                      borderWidth: 1, 
+                      borderColor: 'rgba(139, 92, 246, 0.2)',
+                      paddingHorizontal: 16,
+                      paddingVertical: Platform.OS === 'ios' ? 16 : 12,
+                      minHeight: 52
+                    }}>
+                      <LockIcon size={20} color="#6B7280" style={{ marginRight: 12 }} />
+                      <TextInput
+                        ref={passwordInputRef}
+                        placeholder={isSignUp ? "Mindestens 6 Zeichen" : "Ihr Passwort"}
+                        placeholderTextColor="#6B7280"
+                        value={formData.password}
+                        onChangeText={(text) => setFormData({ ...formData, password: text })}
+                        secureTextEntry={!showPassword}
+                        autoCapitalize="none"
+                        autoCorrect={false}
+                        autoComplete={isSignUp ? "password-new" : "password"}
+                        textContentType={isSignUp ? "newPassword" : "password"}
+                        returnKeyType={step === 'password' ? 'done' : 'next'}
+                        blurOnSubmit={false}
+                        onSubmitEditing={() => {
+                          if (step === 'password') {
+                            handlePasswordNext();
+                          } else {
+                            confirmPasswordInputRef.current?.focus();
+                          }
+                        }}
+                        style={{ flex: 1, color: '#FFFFFF', fontSize: 16 }}
+                        editable={!loading}
+                      />
+                      <Pressable onPress={togglePasswordVisibility} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                        {showPassword ? (
+                          <EyeOffIcon size={20} color="#6B7280" />
+                        ) : (
+                          <EyeIcon size={20} color="#6B7280" />
+                        )}
+                      </Pressable>
+                    </View>
+                    {isSignUp && (
+                      <Text variant="small" className="mt-2 ml-8" style={{ color: '#9CA3AF', fontSize: 12 }}>
+                        Mindestens 6 Zeichen
+                      </Text>
                     )}
-                  </Pressable>
-                </View>
-                {isSignUp && (
-                  <Text variant="small" className="mt-2 ml-8" style={{ color: '#9CA3AF', fontSize: 12 }}>
-                    Mindestens 6 Zeichen
-                  </Text>
-                )}
-              </View>
+                  </View>
+                </Animated.View>
+              )}
 
-              {/* Confirm Password Input (Sign Up only) */}
-              {isSignUp && (
-                <View>
-                  <View className="flex-row items-center mb-2">
-                    <LockIcon size={18} color="#9CA3AF" style={{ marginRight: 8 }} />
-                    <Text className="text-white" style={{ fontSize: 14, fontWeight: '500' }}>Passwort bestätigen</Text>
+              {/* Confirm Password Input - Only visible when step is 'confirmPassword' and isSignUp */}
+              {isSignUp && step === 'confirmPassword' && (
+                <Animated.View entering={FadeInDown.delay(150).duration(600).easing(Easing.bezier(0.25, 0.1, 0.25, 1))}>
+                  <View>
+                    <View className="flex-row items-center" style={{ 
+                      backgroundColor: '#1E293B', 
+                      borderRadius: 12, 
+                      borderWidth: 1, 
+                      borderColor: 'rgba(139, 92, 246, 0.2)',
+                      paddingHorizontal: 16,
+                      paddingVertical: Platform.OS === 'ios' ? 16 : 12,
+                      minHeight: 52
+                    }}>
+                      <LockIcon size={20} color="#6B7280" style={{ marginRight: 12 }} />
+                      <TextInput
+                        ref={confirmPasswordInputRef}
+                        placeholder="Passwort wiederholen"
+                        placeholderTextColor="#6B7280"
+                        value={formData.confirmPassword}
+                        onChangeText={(text) => setFormData({ ...formData, confirmPassword: text })}
+                        secureTextEntry={!showConfirmPassword}
+                        autoCapitalize="none"
+                        autoCorrect={false}
+                        autoComplete="password-new"
+                        textContentType="newPassword"
+                        returnKeyType="done"
+                        onSubmitEditing={handleSubmit}
+                        style={{ flex: 1, color: '#FFFFFF', fontSize: 16 }}
+                        editable={!loading}
+                      />
+                      <Pressable onPress={toggleConfirmPasswordVisibility} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                        {showConfirmPassword ? (
+                          <EyeOffIcon size={20} color="#6B7280" />
+                        ) : (
+                          <EyeIcon size={20} color="#6B7280" />
+                        )}
+                      </Pressable>
+                    </View>
                   </View>
-                  <View className="flex-row items-center" style={{ 
-                    backgroundColor: '#1E293B', 
-                    borderRadius: 12, 
-                    borderWidth: 1, 
-                    borderColor: 'rgba(139, 92, 246, 0.2)',
-                    paddingHorizontal: 16,
-                    paddingVertical: Platform.OS === 'ios' ? 16 : 12,
-                    minHeight: 52
-                  }}>
-                    <LockIcon size={20} color="#6B7280" style={{ marginRight: 12 }} />
-                    <TextInput
-                      placeholder="Passwort wiederholen"
-                      placeholderTextColor="#6B7280"
-                      value={formData.confirmPassword}
-                      onChangeText={(text) => setFormData({ ...formData, confirmPassword: text })}
-                      secureTextEntry={!showConfirmPassword}
-                      autoCapitalize="none"
-                      autoCorrect={false}
-                      autoComplete="password-new"
-                      textContentType="newPassword"
-                      returnKeyType="done"
-                      onSubmitEditing={handleSubmit}
-                      style={{ flex: 1, color: '#FFFFFF', fontSize: 16 }}
-                      editable={!loading}
-                    />
-                    <Pressable onPress={toggleConfirmPasswordVisibility} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                      {showConfirmPassword ? (
-                        <EyeOffIcon size={20} color="#6B7280" />
+                </Animated.View>
+              )}
+
+              {/* Action Buttons */}
+              {step === 'email' ? (
+                // No button - user clicks the arrow icon instead
+                null
+              ) : step === 'password' ? (
+                <Animated.View entering={FadeInDown.delay(200).duration(600).easing(Easing.bezier(0.25, 0.1, 0.25, 1))}>
+                  <View className="gap-3">
+                    {isSignUp ? (
+                      <Button
+                        onPress={handlePasswordNext}
+                        className="w-full"
+                        disabled={loading || !formData.password || formData.password.length < 6}
+                        style={{ borderRadius: 12, minHeight: 52 }}
+                      >
+                        <Text style={{ fontSize: 16, fontWeight: '600' }}>Weiter</Text>
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        onPress={handlePasswordNext}
+                        className="w-full"
+                        disabled={loading || !formData.password}
+                        style={{ borderRadius: 12, minHeight: 52, borderColor: 'rgba(139, 92, 246, 0.5)', backgroundColor: 'rgba(139, 92, 246, 0.1)' }}
+                      >
+                        <Text className="text-white" style={{ fontSize: 16, fontWeight: '600' }}>Anmelden</Text>
+                      </Button>
+                    )}
+                    <Button
+                      variant="outline"
+                      onPress={() => {
+                        setStep('email');
+                        Keyboard.dismiss();
+                      }}
+                      className="w-full"
+                      disabled={loading}
+                      style={{ borderRadius: 12, minHeight: 52, borderColor: 'rgba(139, 92, 246, 0.3)', backgroundColor: 'transparent' }}
+                    >
+                      <Text className="text-white" style={{ fontSize: 16, fontWeight: '600' }}>Zurück</Text>
+                    </Button>
+                  </View>
+                </Animated.View>
+              ) : (
+                <Animated.View entering={FadeInDown.delay(250).duration(600).easing(Easing.bezier(0.25, 0.1, 0.25, 1))}>
+                  <View className="gap-3">
+                    <Button
+                      onPress={handleSubmit}
+                      className="w-full"
+                      disabled={loading || !formData.email || !formData.password || !formData.confirmPassword}
+                      style={{ borderRadius: 12, minHeight: 52 }}
+                    >
+                      {loading ? (
+                        <View className="flex-row items-center gap-2">
+                          <Spinner size="small" color="#FFFFFF" />
+                          <Text style={{ fontSize: 16, fontWeight: '600' }}>Wird registriert...</Text>
+                        </View>
                       ) : (
-                        <EyeIcon size={20} color="#6B7280" />
+                        <Text style={{ fontSize: 16, fontWeight: '600' }}>Konto erstellen</Text>
                       )}
-                    </Pressable>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onPress={() => {
+                        setStep('password');
+                        Keyboard.dismiss();
+                      }}
+                      className="w-full"
+                      disabled={loading}
+                      style={{ borderRadius: 12, minHeight: 52, borderColor: 'rgba(139, 92, 246, 0.3)', backgroundColor: 'transparent' }}
+                    >
+                      <Text className="text-white" style={{ fontSize: 16, fontWeight: '600' }}>Zurück</Text>
+                    </Button>
                   </View>
+                </Animated.View>
+              )}
+
+              {/* Toggle Sign Up/Login - Only visible when step is 'email' */}
+              {step === 'email' && (
+                <View className="mt-4 items-center">
+                  <Pressable
+                    onPress={() => {
+                      setIsSignUp(!isSignUp);
+                      setFormData({ email: '', password: '', confirmPassword: '' });
+                      Keyboard.dismiss();
+                    }}
+                    disabled={loading}
+                  >
+                    <Text className="text-center" style={{ color: '#9CA3AF', fontSize: 14 }}>
+                      {isSignUp ? 'Bereits ein Konto? ' : 'Noch kein Konto? '}
+                      <Text style={{ color: '#8B5CF6', fontWeight: '600' }}>
+                        {isSignUp ? 'Jetzt anmelden' : 'Jetzt registrieren'}
+                      </Text>
+                    </Text>
+                  </Pressable>
                 </View>
               )}
 
-              {/* Primary Button */}
-              <Button
-                onPress={handleSubmit}
-                className="w-full mt-2"
-                disabled={loading || (isSignUp && (!formData.email || !formData.password || !formData.confirmPassword)) || (!isSignUp && (!formData.email || !formData.password))}
-                style={{ borderRadius: 12, minHeight: 52 }}
-              >
-                {loading ? (
-                  <View className="flex-row items-center gap-2">
-                    <Spinner size="small" color="#FFFFFF" />
-                    <Text style={{ fontSize: 16, fontWeight: '600' }}>{isSignUp ? 'Wird registriert...' : 'Wird angemeldet...'}</Text>
-                  </View>
-                ) : (
-                  <Text style={{ fontSize: 16, fontWeight: '600' }}>{isSignUp ? 'Konto erstellen' : 'Anmelden'}</Text>
-                )}
-              </Button>
-
-              {/* Toggle Sign Up/Login */}
-              <View className="mt-4 items-center">
-                <Pressable
-                  onPress={() => {
-                    setIsSignUp(!isSignUp);
-                    setFormData({ email: '', password: '', confirmPassword: '' });
-                    Keyboard.dismiss();
-                  }}
-                  disabled={loading}
-                >
-                  <Text className="text-center" style={{ color: '#9CA3AF', fontSize: 14 }}>
-                    {isSignUp ? 'Bereits ein Konto? ' : 'Noch kein Konto? '}
-                    <Text style={{ color: '#8B5CF6', fontWeight: '600' }}>
-                      {isSignUp ? 'Jetzt anmelden' : 'Jetzt registrieren'}
-                    </Text>
+              {/* Terms (Sign Up only) - Only visible when step is 'confirmPassword' */}
+              {isSignUp && step === 'confirmPassword' && (
+                <Animated.View entering={FadeIn.delay(300).duration(400).easing(Easing.out(Easing.ease))}>
+                  <Text variant="small" className="text-center mt-2" style={{ color: '#6B7280', fontSize: 12, lineHeight: 16 }}>
+                    Mit der Registrierung stimmen Sie unseren{'\n'}Nutzungsbedingungen und Datenschutzrichtlinien zu.
                   </Text>
-                </Pressable>
-              </View>
-
-              {/* Terms (Sign Up only) */}
-              {isSignUp && (
-                <Text variant="small" className="text-center mt-2" style={{ color: '#6B7280', fontSize: 12, lineHeight: 16 }}>
-                  Mit der Registrierung stimmen Sie unseren{'\n'}Nutzungsbedingungen und Datenschutzrichtlinien zu.
-                </Text>
+                </Animated.View>
               )}
             </Animated.View>
           </View>
